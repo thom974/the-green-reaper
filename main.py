@@ -3,6 +3,7 @@
 import pygame
 import math
 import random
+import sys
 
 # setting up pygame ---------------------------------------------#
 
@@ -39,6 +40,10 @@ char_up = False
 char_down = False
 char_left = False
 char_right = False
+char_jump = False
+char_fall = False
+char_acceleration = 0
+char_prev_pos = 0
 
 f = open('data/maps/map_one.txt','r')
 map_one_data = [[tile for tile in tile_row.rstrip("\n")] for tile_row in f]
@@ -62,39 +67,46 @@ while True:
     text_rect = text.get_rect()
     text_rect.center = (800, 40)
 
-    # event detection
+    # event detection -----------------------------------------------------#
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_UP:
+            if event.key == pygame.K_w:
                 char_up = True
-            if event.key == pygame.K_DOWN:
+            if event.key == pygame.K_s:
                 char_down = True
-            if event.key == pygame.K_LEFT:
+            if event.key == pygame.K_a:
                 char_left = True
-            if event.key == pygame.K_RIGHT:
+            if event.key == pygame.K_d:
                 char_right = True
+            if event.key == pygame.K_SPACE and char_jump is False:
+                char_prev_pos = char_y
+                char_jump = True
+                char_acceleration = 20
         if event.type == pygame.KEYUP:
-            if event.key == pygame.K_UP:
+            if event.key == pygame.K_w:
                 char_up = False
-            if event.key == pygame.K_DOWN:
+            if event.key == pygame.K_s:
                 char_down = False
-            if event.key == pygame.K_LEFT:
+            if event.key == pygame.K_a:
                 char_left = False
-            if event.key == pygame.K_RIGHT:
+            if event.key == pygame.K_d:
                 char_right = False
 
-    # rendering map
+    # rendering map -----------------------------------------------------#
     for y, tile_row in enumerate(map_one_data):
         for x,tile in enumerate(tile_row):
             if tile == "1":
                 block_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0], (10 + x * bv + y * bv) - game_scroll[1], 101, 101)
                 blocks.append(block_rect)
                 screen.blit(green_block,((200 + x * bv - y * bv) - game_scroll[0], (10 + x * bv + y * bv) - game_scroll[1]))
-                pygame.draw.rect(screen, (0, 0, 0), block_rect, 1)
+                pygame.draw.rect(screen, (0, 0, 0), block_rect, 1)   # draw each block's hitbox
 
-    # character code
+    # character code -----------------------------------------------------#
+    character_hitbox = pygame.Rect(char_x - game_scroll[0] + 10,char_y - game_scroll[1] + 10,55,90)
+    character_feet_hitbox = pygame.Rect(char_x - game_scroll[0] + 10,char_y - game_scroll[1] + 80,55,20)
+    # character movement
     if char_up:
         char_y -= char_speed
     if char_down:
@@ -103,8 +115,37 @@ while True:
         char_x -= char_speed
     if char_right:
         char_x += char_speed
+    if char_jump:
+        char_y -= char_acceleration
+        char_acceleration -= 1
+        if char_y >= char_prev_pos:
+            char_jump = False
+
+    # check if character fallen
+    block_touched = False
+    if not char_fall:
+        for num, block_hitbox in enumerate(blocks):
+            if character_feet_hitbox.colliderect(block_hitbox):
+                block_touched = True
+        else:
+            if not block_touched and not char_jump:
+                char_fall = True
+                char_acceleration = 20
+
+    if not block_touched and not char_jump:
+        char_y += char_acceleration
+        char_acceleration += 1
+
+    if char_acceleration >= 100:  # if player falls off the map, quit program (later implement life system)
+        pygame.quit()
+        sys.exit()
+
+    # drawing the character and its hitboxes
+    pygame.draw.rect(screen,(255,0,0),character_hitbox,1)
+    pygame.draw.rect(screen,(0,255,0),character_feet_hitbox,1)
     screen.blit(character,(char_x - game_scroll[0],char_y - game_scroll[1]))
 
+    print(char_up)
     screen.blit(text,text_rect)
     pygame.display.flip()
     clock.tick(FPS)

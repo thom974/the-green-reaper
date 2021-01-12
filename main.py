@@ -5,6 +5,8 @@ import math
 import random
 import sys
 
+import data.scripts.math_functions as m
+
 # setting up pygame ---------------------------------------------#
 
 pygame.init()
@@ -96,13 +98,17 @@ while True:
                 char_right = False
 
     # rendering map -----------------------------------------------------#
+
     for y, tile_row in enumerate(map_one_data):
         for x,tile in enumerate(tile_row):
             if tile == "1":
                 block_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0], (10 + x * bv + y * bv) - game_scroll[1], 101, 101)
-                blocks.append(block_rect)
-                screen.blit(green_block,((200 + x * bv - y * bv) - game_scroll[0], (10 + x * bv + y * bv) - game_scroll[1]))
+                green_block_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0], (10 + x * bv + y * bv) - game_scroll[1],green_block.get_width(),green_block.get_height())
+                blocks.append([block_rect,green_block_rect])
                 # pygame.draw.rect(screen, (0, 0, 0), block_rect, 1)   # draw each block's hitbox
+
+    for block_info in blocks:
+        screen.blit(green_block,block_info[0])
 
     # character code -----------------------------------------------------#
     character_hitbox = pygame.Rect(char_x - game_scroll[0] + 10,char_y - game_scroll[1] + 10,55,90)
@@ -136,7 +142,7 @@ while True:
     block_touched = False
     if not char_fall:
         for num, block_hitbox in enumerate(blocks):
-            if character_feet_shadow.colliderect(block_hitbox):
+            if character_feet_shadow.colliderect(block_hitbox[0]):
                 block_touched = True
         else:
             if not block_touched and not char_jump:

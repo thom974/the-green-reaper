@@ -26,8 +26,45 @@ def load_image(filename):
     surface.set_colorkey((0,0,0))  # remove black background
     return surface
 
+
+animation_frame_surfaces = {}  # holds all the frames' surfaces
+animations_dictionary = {}  # holds a list for every animation type, the keys being the name of each animation
+
+
+def load_animation(directory,frame_frequency):  # frame_frequency holds a list, ex. [1,1] specifying how many times should appear in an animation
+    global animation_frame_surfaces
+    animation_name = directory.split('/')[-1]
+    animation_frame_names = []
+
+    for num, frame in enumerate(frame_frequency):
+        frame_name = animation_name + str(num)  # create the name of the frame
+        frame_location = directory + '/' + frame_name + '.png'  # create the location of each frame image
+        frame_image = pygame.image.load(frame_location).convert()  # load in each frame image
+        frame_image.set_colorkey((255,255,255))  # sets white bg to transparent
+        animation_frame_surfaces[frame_name] = frame_image.copy()  # load into dictionary the frame name + its actual surface
+
+        for _ in range(frame):
+            animation_frame_names.append(frame_name)
+
+    return animation_frame_names  # return all the frame names for an animation
+
+
+def change_animation(animation_name,frame,new_animation):
+    if animation_name != new_animation:
+        char_animation = new_animation
+        char_frame = 0
+        return char_animation, char_frame
+    return animation_name,frame
+
 # loading in game variables -------------------------------------#
 
+# animations
+animations_dictionary['idle'] = load_animation('data/images/animations/idle',[10,10])
+
+# char animation variables
+char_current_animation = 'idle'  # create variable to hold character's current animation
+char_current_frame = 0
+char_animation_flip = False  # flip the frame depending on direction moving
 
 game_scroll = [0,0]
 
@@ -180,7 +217,13 @@ while True:
     pygame.draw.rect(screen,(255,0,0),character_hitbox,1)
     pygame.draw.rect(screen,(0,255,0),character_feet_hitbox,1)
     pygame.draw.rect(screen, shadow_col, character_feet_shadow, 0)
-    screen.blit(character,(char_x - game_scroll[0],char_y - game_scroll[1]))
+    
+    char_current_frame += 1
+    if char_current_frame >= len(animations_dictionary[char_current_animation]):  # if the current frame is equal to the list length, reset it to 0
+        char_current_frame = 0
+    char_frame_name = animations_dictionary[char_current_animation][char_current_frame]  # find frame name depending on char current frame
+    char_frame_to_display = animation_frame_surfaces[char_frame_name]
+    screen.blit(char_frame_to_display,(char_x - game_scroll[0],char_y - game_scroll[1]))
     pygame.draw.circle(screen,(0,0,255),(char_x - game_scroll[0] + 40,char_y - game_scroll[1] + 45),10,0)
 
     # screen.blit(text,text_rect)

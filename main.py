@@ -44,6 +44,7 @@ char_jump = False
 char_fall = False
 char_acceleration = 0
 char_prev_pos = 0
+shadow_col = pygame.Color(255, 0, 0, a=200)
 
 f = open('data/maps/map_one.txt','r')
 map_one_data = [[tile for tile in tile_row.rstrip("\n")] for tile_row in f]
@@ -80,7 +81,7 @@ while True:
                 char_left = True
             if event.key == pygame.K_d:
                 char_right = True
-            if event.key == pygame.K_SPACE and char_jump is False:
+            if event.key == pygame.K_SPACE and char_jump is False and char_fall is False:
                 char_prev_ypos = char_y
                 char_jump = True
                 char_acceleration = 20
@@ -101,7 +102,7 @@ while True:
                 block_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0], (10 + x * bv + y * bv) - game_scroll[1], 101, 101)
                 blocks.append(block_rect)
                 screen.blit(green_block,((200 + x * bv - y * bv) - game_scroll[0], (10 + x * bv + y * bv) - game_scroll[1]))
-                pygame.draw.rect(screen, (0, 0, 0), block_rect, 1)   # draw each block's hitbox
+                # pygame.draw.rect(screen, (0, 0, 0), block_rect, 1)   # draw each block's hitbox
 
     # character code -----------------------------------------------------#
     character_hitbox = pygame.Rect(char_x - game_scroll[0] + 10,char_y - game_scroll[1] + 10,55,90)
@@ -125,22 +126,22 @@ while True:
         char_x -= char_speed
     if char_right:
         char_x += char_speed
-    if char_jump:
+    if char_jump:  # handle character jumping
         char_y -= char_acceleration
         char_acceleration -= 1
-        if char_y >= char_prev_ypos:
+        if char_y - game_scroll[1] + 90 > character_feet_shadow.y:  # plus 90 to detect bottom edge of character
             char_jump = False
 
     # check if character fallen
     block_touched = False
     if not char_fall:
         for num, block_hitbox in enumerate(blocks):
-            if character_feet_hitbox.colliderect(block_hitbox):
+            if character_feet_shadow.colliderect(block_hitbox):
                 block_touched = True
         else:
             if not block_touched and not char_jump:
                 char_fall = True
-                char_acceleration = 20
+                char_acceleration = 10
 
     if not block_touched and not char_jump:
         char_y += char_acceleration
@@ -153,7 +154,7 @@ while True:
     # drawing the character and its hitboxes
     pygame.draw.rect(screen,(255,0,0),character_hitbox,1)
     pygame.draw.rect(screen,(0,255,0),character_feet_hitbox,1)
-    pygame.draw.rect(screen, (0, 0, 0), character_feet_shadow, 0)
+    pygame.draw.rect(screen, shadow_col, character_feet_shadow, 0)
     screen.blit(character,(char_x - game_scroll[0],char_y - game_scroll[1]))
 
     screen.blit(text,text_rect)

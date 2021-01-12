@@ -2,6 +2,7 @@
   <dictionary name="xtoxi">
     <words>
       <w>hitbox</w>
+      <w>ypos</w>
     </words>
   </dictionary>
 </component>

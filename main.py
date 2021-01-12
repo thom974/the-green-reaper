@@ -81,7 +81,7 @@ while True:
             if event.key == pygame.K_d:
                 char_right = True
             if event.key == pygame.K_SPACE and char_jump is False:
-                char_prev_pos = char_y
+                char_prev_ypos = char_y
                 char_jump = True
                 char_acceleration = 20
         if event.type == pygame.KEYUP:
@@ -106,11 +106,21 @@ while True:
     # character code -----------------------------------------------------#
     character_hitbox = pygame.Rect(char_x - game_scroll[0] + 10,char_y - game_scroll[1] + 10,55,90)
     character_feet_hitbox = pygame.Rect(char_x - game_scroll[0] + 10,char_y - game_scroll[1] + 80,55,20)
+
+    if not char_jump:
+        character_feet_shadow = pygame.Rect(char_x - game_scroll[0] + 10,char_y - game_scroll[1] + 80,55,20)
+    else:
+        character_feet_shadow = pygame.Rect(char_x - game_scroll[0] + 10,char_prev_ypos - game_scroll[1] + 80,55,20)
+
     # character movement
     if char_up:
         char_y -= char_speed
+        if char_jump:
+            char_prev_ypos -= char_speed
     if char_down:
         char_y += char_speed
+        if char_jump:
+            char_prev_ypos += char_speed
     if char_left:
         char_x -= char_speed
     if char_right:
@@ -118,7 +128,7 @@ while True:
     if char_jump:
         char_y -= char_acceleration
         char_acceleration -= 1
-        if char_y >= char_prev_pos:
+        if char_y >= char_prev_ypos:
             char_jump = False
 
     # check if character fallen
@@ -143,9 +153,9 @@ while True:
     # drawing the character and its hitboxes
     pygame.draw.rect(screen,(255,0,0),character_hitbox,1)
     pygame.draw.rect(screen,(0,255,0),character_feet_hitbox,1)
+    pygame.draw.rect(screen, (0, 0, 0), character_feet_shadow, 0)
     screen.blit(character,(char_x - game_scroll[0],char_y - game_scroll[1]))
 
-    print(char_up)
     screen.blit(text,text_rect)
     pygame.display.flip()
     clock.tick(FPS)

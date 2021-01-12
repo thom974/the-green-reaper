@@ -33,6 +33,8 @@ game_scroll = [0,0]
 
 green_block = load_image('ground_green').convert()
 green_block = pygame.transform.scale(green_block,(101,170))
+found_tiles = False
+found_tiles_ypos = False
 bv = 51
 
 character = load_image('character').convert()
@@ -52,10 +54,12 @@ f = open('data/maps/map_one.txt','r')
 map_one_data = [[tile for tile in tile_row.rstrip("\n")] for tile_row in f]
 osu_font = pygame.font.Font('data/Aller_Bd.ttf', 30)
 
+
 # main loop -----------------------------------------------------#
 while True:
     # some variables
     blocks = []
+    char_center = (char_x - game_scroll[0] + 40,char_y - game_scroll[1] + 45)
 
     # background
     screen.fill((255, 255, 255))
@@ -107,8 +111,23 @@ while True:
                 blocks.append([block_rect,green_block_rect])
                 # pygame.draw.rect(screen, (0, 0, 0), block_rect, 1)   # draw each block's hitbox
 
-    for block_info in blocks:
-        screen.blit(green_block,block_info[0])
+    # create a list ONCE containing boolean values for each tile
+    if not found_tiles:
+        tile_render_states = [False for block in blocks]
+        found_tiles = True
+
+    for num, block_info in enumerate(blocks):
+        block_center = (block_info[1].x + block_info[1].w // 2, block_info[1].y + block_info[1].h // 2)
+        if m.check_rect_distance(char_center,block_center,400):
+            # pygame.draw.line(screen, (0, 255, 0), char_center,(block_info[1].x + block_info[1].w // 2, block_info[1].y + block_info[1].h // 2))
+            tile_render_states[num] = True
+
+        else:
+            pass
+            # pygame.draw.line(screen, (255, 0, 0), char_center,(block_info[1].x + block_info[1].w // 2, block_info[1].y + block_info[1].h // 2))
+
+        if tile_render_states[num]:
+            screen.blit(green_block, block_info[0])
 
     # character code -----------------------------------------------------#
     character_hitbox = pygame.Rect(char_x - game_scroll[0] + 10,char_y - game_scroll[1] + 10,55,90)
@@ -162,8 +181,9 @@ while True:
     pygame.draw.rect(screen,(0,255,0),character_feet_hitbox,1)
     pygame.draw.rect(screen, shadow_col, character_feet_shadow, 0)
     screen.blit(character,(char_x - game_scroll[0],char_y - game_scroll[1]))
+    pygame.draw.circle(screen,(0,0,255),(char_x - game_scroll[0] + 40,char_y - game_scroll[1] + 45),10,0)
 
-    screen.blit(text,text_rect)
+    # screen.blit(text,text_rect)
     pygame.display.flip()
     clock.tick(FPS)
 

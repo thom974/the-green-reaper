@@ -41,6 +41,7 @@ def load_animation(directory,frame_frequency):  # frame_frequency holds a list, 
         frame_location = directory + '/' + frame_name + '.png'  # create the location of each frame image
         frame_image = pygame.image.load(frame_location).convert()  # load in each frame image
         frame_image.set_colorkey((255,255,255))  # sets white bg to transparent
+        frame_image = pygame.transform.scale(frame_image,(100,100))
         animation_frame_surfaces[frame_name] = frame_image.copy()  # load into dictionary the frame name + its actual surface
 
         for _ in range(frame):
@@ -49,8 +50,8 @@ def load_animation(directory,frame_frequency):  # frame_frequency holds a list, 
     return animation_frame_names  # return all the frame names for an animation
 
 
-def change_animation(animation_name,frame,new_animation):
-    if animation_name != new_animation:
+def change_animation(animation_name,frame,new_animation,lock):
+    if animation_name != new_animation and not lock:
         char_animation = new_animation
         char_frame = 0
         return char_animation, char_frame
@@ -58,13 +59,17 @@ def change_animation(animation_name,frame,new_animation):
 
 # loading in game variables -------------------------------------#
 
+
 # animations
-animations_dictionary['idle'] = load_animation('data/images/animations/idle',[10,10])
+animations_dictionary['idle'] = load_animation('data/images/animations/idle',[15,15])
+animations_dictionary['walk'] = load_animation('data/images/animations/walk',[10,10,10])
+animations_dictionary['jump'] = load_animation('data/images/animations/jump',[2,2,10,2,5,1])
 
 # char animation variables
 char_current_animation = 'idle'  # create variable to hold character's current animation
 char_current_frame = 0
 char_animation_flip = False  # flip the frame depending on direction moving
+char_animation_lock = False
 
 game_scroll = [0,0]
 
@@ -125,18 +130,28 @@ while True:
             if event.key == pygame.K_d:
                 char_right = True
             if event.key == pygame.K_SPACE and char_jump is False and char_fall is False:
+                char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'jump',char_animation_lock)
+                char_animation_lock = True
                 char_prev_ypos = char_y
                 char_jump = True
                 char_acceleration = 20
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_w:
                 char_up = False
+                if not char_jump:
+                    char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'idle',char_animation_lock)
             if event.key == pygame.K_s:
                 char_down = False
+                if not char_jump:
+                    char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'idle',char_animation_lock)
             if event.key == pygame.K_a:
                 char_left = False
+                if not char_jump:
+                    char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'idle',char_animation_lock)
             if event.key == pygame.K_d:
                 char_right = False
+                if not char_jump:
+                    char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'idle',char_animation_lock)
 
     # rendering map -----------------------------------------------------#
 
@@ -167,13 +182,13 @@ while True:
             screen.blit(green_block, block_info[0])
 
     # character code -----------------------------------------------------#
-    character_hitbox = pygame.Rect(char_x - game_scroll[0] + 10,char_y - game_scroll[1] + 10,55,90)
-    character_feet_hitbox = pygame.Rect(char_x - game_scroll[0] + 10,char_y - game_scroll[1] + 80,55,20)
+    character_hitbox = pygame.Rect(char_x - game_scroll[0] + 10,char_y - game_scroll[1] + 10,70,90)
+    character_feet_hitbox = pygame.Rect(char_x - game_scroll[0] + 10,char_y - game_scroll[1] + 80,70,20)
 
     if not char_jump:
-        character_feet_shadow = pygame.Rect(char_x - game_scroll[0] + 10,char_y - game_scroll[1] + 80,55,20)
+        character_feet_shadow = pygame.Rect(char_x - game_scroll[0] + 10,char_y - game_scroll[1] + 80,70,20)
     else:
-        character_feet_shadow = pygame.Rect(char_x - game_scroll[0] + 10,char_prev_ypos - game_scroll[1] + 80,55,20)
+        character_feet_shadow = pygame.Rect(char_x - game_scroll[0] + 10,char_prev_ypos - game_scroll[1] + 80,70,20)
 
     # character movement
     if char_up:
@@ -186,13 +201,21 @@ while True:
             char_prev_ypos += char_speed
     if char_left:
         char_x -= char_speed
+        # for character sprite
+        char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'walk',char_animation_lock)
+        char_animation_flip = False
     if char_right:
         char_x += char_speed
+        # for character sprite
+        char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'walk',char_animation_lock)
+        char_animation_flip = True
     if char_jump:  # handle character jumping
         char_y -= char_acceleration
         char_acceleration -= 1
         if char_y - game_scroll[1] + 90 > character_feet_shadow.y:  # plus 90 to detect bottom edge of character
             char_jump = False
+            char_animation_lock = False
+            char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'idle',char_animation_lock)
 
     # check if character fallen
     block_touched = False
@@ -217,16 +240,19 @@ while True:
     pygame.draw.rect(screen,(255,0,0),character_hitbox,1)
     pygame.draw.rect(screen,(0,255,0),character_feet_hitbox,1)
     pygame.draw.rect(screen, shadow_col, character_feet_shadow, 0)
-    
+
     char_current_frame += 1
-    if char_current_frame >= len(animations_dictionary[char_current_animation]):  # if the current frame is equal to the list length, reset it to 0
+    if char_current_frame >= len(animations_dictionary[char_current_animation]) and char_current_animation != 'jump':  # if the current frame is equal to the list length, reset it to 0
         char_current_frame = 0
+    if char_current_animation == 'jump' and char_current_frame >= len(animations_dictionary['jump']):
+        char_current_frame = len(animations_dictionary['jump']) - 1
+
     char_frame_name = animations_dictionary[char_current_animation][char_current_frame]  # find frame name depending on char current frame
     char_frame_to_display = animation_frame_surfaces[char_frame_name]
-    screen.blit(char_frame_to_display,(char_x - game_scroll[0],char_y - game_scroll[1]))
-    pygame.draw.circle(screen,(0,0,255),(char_x - game_scroll[0] + 40,char_y - game_scroll[1] + 45),10,0)
+    screen.blit(pygame.transform.flip(char_frame_to_display,char_animation_flip,False),(char_x - game_scroll[0],char_y - game_scroll[1]))  # flip to make the character face the right way
 
     # screen.blit(text,text_rect)
+    print(char_current_animation)
     pygame.display.flip()
     clock.tick(FPS)
 

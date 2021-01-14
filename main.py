@@ -75,11 +75,14 @@ game_scroll = [0,0]
 
 green_block = load_image('ground_green').convert()
 green_block = pygame.transform.scale(green_block,(101,170))
+green_tree = load_image('green_tree').convert()
+green_tree = pygame.transform.scale(green_tree,(120,189))
+green_rock = load_image('green_rock').convert()
+green_rock = pygame.transform.scale(green_rock,(80,80))
 found_tiles = False
 found_tiles_ypos = False
 bv = 51
 
-character = load_image('character').convert()
 char_x, char_y = (100,100)
 char_speed = 3
 char_up = False
@@ -101,10 +104,12 @@ osu_font = pygame.font.Font('data/Aller_Bd.ttf', 30)
 while True:
     # some variables
     blocks = []
+    trees = []
+    rocks = []
     char_center = (char_x - game_scroll[0] + 40,char_y - game_scroll[1] + 45)
 
     # background
-    screen.fill((255, 255, 255))
+    screen.fill((82, 96, 110))
 
     # control game scroll
     game_scroll[0] += (char_x - game_scroll[0] - 450 + 37) / 20
@@ -157,11 +162,20 @@ while True:
 
     for y, tile_row in enumerate(map_one_data):
         for x,tile in enumerate(tile_row):
-            if tile == "1":
+            if tile != "0":  # append the ground tile
                 block_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0], (10 + x * bv + y * bv) - game_scroll[1], 101, 101)
                 green_block_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0], (10 + x * bv + y * bv) - game_scroll[1],green_block.get_width(),green_block.get_height())
                 blocks.append([block_rect,green_block_rect])
-                # pygame.draw.rect(screen, (0, 0, 0), block_rect, 1)   # draw each block's hitbox
+                if tile == "2":
+                    tree_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0] - 10, (10 + x * bv + y * bv) - game_scroll[1] - green_tree.get_height() + 80, green_tree.get_width(),green_tree.get_height())
+                    trees.append(tree_rect)
+                else:
+                    trees.append(None)
+                if tile == "3":
+                    rock_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0] + 10, (10 + x * bv + y * bv) - game_scroll[1] + 5, green_rock.get_width(),green_rock.get_height())
+                    rocks.append(rock_rect)
+                else:
+                    rocks.append(None)
 
     # create a list ONCE containing boolean values for each tile
     if not found_tiles:
@@ -180,6 +194,10 @@ while True:
 
         if tile_render_states[num]:
             screen.blit(green_block, block_info[0])
+            if trees[num] is not None:
+                screen.blit(green_tree,trees[num])
+            if rocks[num] is not None:
+                screen.blit(green_rock,rocks[num])
 
     # character code -----------------------------------------------------#
     character_hitbox = pygame.Rect(char_x - game_scroll[0] + 10,char_y - game_scroll[1] + 10,70,90)

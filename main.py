@@ -73,6 +73,8 @@ char_animation_lock = False
 
 game_scroll = [0,0]
 
+bridge = load_image('bridge').convert()
+bridge = pygame.transform.scale(bridge,(101,169))
 green_block = load_image('ground_green').convert()
 green_block = pygame.transform.scale(green_block,(101,170))
 green_tree = load_image('green_tree').convert()
@@ -162,20 +164,28 @@ while True:
 
     for y, tile_row in enumerate(map_one_data):
         for x,tile in enumerate(tile_row):
-            if tile != "0":  # append the ground tile
+            if tile != "0" and tile != "4":  # append the ground tile
                 block_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0], (10 + x * bv + y * bv) - game_scroll[1], 101, 101)
                 green_block_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0], (10 + x * bv + y * bv) - game_scroll[1],green_block.get_width(),green_block.get_height())
                 blocks.append([block_rect,green_block_rect])
                 if tile == "2":
                     tree_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0] - 10, (10 + x * bv + y * bv) - game_scroll[1] - green_tree.get_height() + 80, green_tree.get_width(),green_tree.get_height())
-                    trees.append(tree_rect)
+                    tree_hitbox = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0] + 10, (10 + x * bv + y * bv) - game_scroll[1] - green_tree.get_height() + 80, green_tree.get_width()-20,green_tree.get_height()-20)
+                    trees.append([tree_rect,tree_hitbox])
                 else:
                     trees.append(None)
                 if tile == "3":
                     rock_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0] + 10, (10 + x * bv + y * bv) - game_scroll[1] + 5, green_rock.get_width(),green_rock.get_height())
-                    rocks.append(rock_rect)
+                    rock_hitbox = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0] + 10, (10 + x * bv + y * bv) - game_scroll[1] + 25, green_rock.get_width(),green_rock.get_height() // 2)
+                    rocks.append([rock_rect,rock_hitbox])
                 else:
                     rocks.append(None)
+            elif tile == "4":
+                block_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0],(10 + x * bv + y * bv) - game_scroll[1], 101, 101)
+                bridge_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0],(10 + x * bv + y * bv) - game_scroll[1], bridge.get_width(),bridge.get_height())
+                blocks.append([block_rect, bridge_rect])
+                trees.append(None)
+                rocks.append(None)
 
     # create a list ONCE containing boolean values for each tile
     if not found_tiles:
@@ -187,21 +197,52 @@ while True:
         if m.check_rect_distance(char_center,block_center,400):
             # pygame.draw.line(screen, (0, 255, 0), char_center,(block_info[1].x + block_info[1].w // 2, block_info[1].y + block_info[1].h // 2))
             tile_render_states[num] = True
-
         else:
             pass
             # pygame.draw.line(screen, (255, 0, 0), char_center,(block_info[1].x + block_info[1].w // 2, block_info[1].y + block_info[1].h // 2))
 
         if tile_render_states[num]:
-            screen.blit(green_block, block_info[0])
+            if block_info[1].h == 170:
+                screen.blit(green_block, block_info[0])
+            elif block_info[1].h == 169:
+                screen.blit(bridge, block_info[0])
             if trees[num] is not None:
-                screen.blit(green_tree,trees[num])
+                screen.blit(green_tree,trees[num][0])
+                # pygame.draw.rect(screen,(0,0,255),trees[num][1],5)
             if rocks[num] is not None:
-                screen.blit(green_rock,rocks[num])
+                screen.blit(green_rock,rocks[num][0])
+                # pygame.draw.rect(screen,(0,0,255),rocks[num][1],5)
 
     # character code -----------------------------------------------------#
     character_hitbox = pygame.Rect(char_x - game_scroll[0] + 10,char_y - game_scroll[1] + 10,70,90)
     character_feet_hitbox = pygame.Rect(char_x - game_scroll[0] + 10,char_y - game_scroll[1] + 80,70,20)
+
+    # detect collision
+    for rock in rocks:
+        if rock is not None:
+            rock_hb = rock[1]
+            collisions = m.check_collision(character_feet_hitbox,rock_hb)
+            if collisions[0]:
+                char_y -= 5
+            elif collisions[1]:
+                char_y += 5
+            elif collisions[2]:
+                char_x -= 5
+            elif collisions[3]:
+                char_x += 5
+
+    for tree in trees:
+        if tree is not None:
+            tree_hb = tree[1]
+            collisions = m.check_collision(character_feet_hitbox, tree_hb)
+            if collisions[0]:
+                char_y -= 5
+            elif collisions[1]:
+                char_y += 5
+            elif collisions[2]:
+                char_x -= 5
+            elif collisions[3]:
+                char_x += 5
 
     if not char_jump:
         character_feet_shadow = pygame.Rect(char_x - game_scroll[0] + 10,char_y - game_scroll[1] + 80,70,20)
@@ -211,10 +252,12 @@ while True:
     # character movement
     if char_up:
         char_y -= char_speed
+        char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'walk',char_animation_lock)
         if char_jump:
             char_prev_ypos -= char_speed
     if char_down:
         char_y += char_speed
+        char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'walk',char_animation_lock)
         if char_jump:
             char_prev_ypos += char_speed
     if char_left:

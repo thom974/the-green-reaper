@@ -2,6 +2,7 @@ import math
 import pygame
 import sys
 import random
+from main import load_animation, animations_dictionary,animation_frame_surfaces
 
 pygame.init()
 screen = pygame.display.set_mode((500,500))
@@ -26,12 +27,15 @@ glitch_colours = [(16, 26, 86),(22, 45, 118),(36, 86, 196),(195, 20, 118),(51, 7
 bn = 30
 sn = 100
 
+animations_dictionary['slash'] = load_animation('animations/slash',[5,10,7])
+print(animations_dictionary['slash'])
+
 # main loop -------------------------------------------------------------#
 
 gsl = 0
 
 while True:
-    screen.fill((255,255,255))
+    screen.fill((109, 150, 194))
     # making glitch effect
     if spell_cast[0]:
         glitch_bg_sl = pygame.Surface((600, 600))

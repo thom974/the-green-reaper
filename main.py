@@ -31,7 +31,7 @@ animation_frame_surfaces = {}  # holds all the frames' surfaces
 animations_dictionary = {}  # holds a list for every animation type, the keys being the name of each animation
 
 
-def load_animation(directory,frame_frequency):  # frame_frequency holds a list, ex. [1,1] specifying how many times should appear in an animation
+def load_animation(directory,frame_frequency,**kwargs):  # frame_frequency holds a list, ex. [1,1] specifying how many times should appear in an animation
     global animation_frame_surfaces
     animation_name = directory.split('/')[-1]
     animation_frame_names = []
@@ -41,7 +41,10 @@ def load_animation(directory,frame_frequency):  # frame_frequency holds a list, 
         frame_location = directory + '/' + frame_name + '.png'  # create the location of each frame image
         frame_image = pygame.image.load(frame_location).convert()  # load in each frame image
         frame_image.set_colorkey((255,255,255))  # sets white bg to transparent
-        frame_image = pygame.transform.scale(frame_image,(100,100))
+        if 'size' not in kwargs:
+            frame_image = pygame.transform.scale(frame_image,(100,100))
+        else:
+            frame_image = pygame.transform.scale(frame_image,kwargs['size'])
         animation_frame_surfaces[frame_name] = frame_image.copy()  # load into dictionary the frame name + its actual surface
 
         for _ in range(frame):
@@ -64,6 +67,8 @@ def change_animation(animation_name,frame,new_animation,lock):
 animations_dictionary['idle'] = load_animation('data/images/animations/idle',[15,15])
 animations_dictionary['walk'] = load_animation('data/images/animations/walk',[10,10,10])
 animations_dictionary['jump'] = load_animation('data/images/animations/jump',[2,2,10,2,5,1])
+animations_dictionary['slash'] = load_animation('data/images/animations/slash',[10,8,6,4,3],size=(200,200))
+animations_dictionary['thunder'] = load_animation('data/images/animations/thunder',[2,2,2,2,2,2,2,2,2,2,5,2,2,60],size=(105,355))
 
 # char animation variables
 char_current_animation = 'idle'  # create variable to hold character's current animation
@@ -118,7 +123,7 @@ spells_dictionary = {
     'thunder': [1, 3, 4, 5, 7]
 }
 
-spell_cast = [False,[0,0],[],[],[None,0]]  # spell active, grid location, line points, points touched, [current spell active, its frame]
+spell_cast = [False,[0,0],[],[],['',0,[0,0]]]  # spell active, grid location, line points, points touched, [current spell active, its frame,[location]]
 
 # glitch colours
 glitch_bg = (10, 7, 44)
@@ -131,6 +136,7 @@ f = open('data/maps/map_one.txt','r')
 map_one_data = [[tile for tile in tile_row.rstrip("\n")] for tile_row in f]
 osu_font = pygame.font.Font('data/Aller_Bd.ttf', 30)
 
+print(animation_frame_surfaces)
 # main loop -----------------------------------------------------#
 while True:
     # some variables
@@ -151,6 +157,14 @@ while True:
     text = osu_font.render(str(mx) + ", " + str(my), True, (0, 0, 0))
     text_rect = text.get_rect()
     text_rect.center = (800, 40)
+
+    # # test spell casting
+    # current_spell_frame = animations_dictionary['thunder'][spell_cast[4][1]]
+    # csf_surf = animation_frame_surfaces[current_spell_frame]
+    # screen.blit(csf_surf, (0, 0))
+    # spell_cast[4][1] += 1
+    # if spell_cast[4][1] >= len(animations_dictionary['thunder']):
+    #     spell_cast[4][1] = 0
 
     # event detection -----------------------------------------------------#
     for event in pygame.event.get():
@@ -279,56 +293,6 @@ while True:
     mx, my = pygame.mouse.get_pos()
     mb = pygame.mouse.get_pressed(3)
 
-    # spell casting code ------------------------------------------------------------------------#
-    if mb[0]:
-        spell_cast[0] = True
-        if spell_cast[1][0] == 0 and spell_cast[1][1] == 0:
-            spell_cast[1] = [mx,my]
-    else:
-        if len(spell_cast[3]) != 0:  # check if the user connected any grid points
-            for spell_name, spell_points in spells_dictionary.items():
-                if spell_points == spell_cast[3]:
-                    print("spell casted:", spell_name)
-
-        spell_cast[0] = False
-        spell_cast[1][0], spell_cast[1][1] = (0,0)
-        spell_cast[2] = []
-        spell_cast[3] = []
-        grid_point_diff = 1
-        grid_points = []
-        active_point = 4
-        grid_max = False
-        gsl = 0
-
-    if spell_cast[0]:
-        for y in range(3):
-            for x in range(3):
-                grid_point_loc = [(spell_cast[1][0] - grid_point.get_width()//2 - grid_point_diff * grid_scale) + x * grid_point_diff * grid_scale, (spell_cast[1][1] - grid_point.get_width()//2 - grid_point_diff * grid_scale) + y * grid_point_diff * grid_scale]
-                if grid_max and len(grid_points) < 9:
-                    grid_points.append(pygame.Rect(grid_point_loc[0], grid_point_loc[1], grid_point.get_width(),grid_point.get_height()))
-                screen.blit(grid_point,grid_point_loc)
-
-        if len(grid_points) != 0:
-            pygame.draw.line(screen, (0, 0, 0), (grid_points[active_point][0] + grid_point.get_width() // 2,grid_points[active_point][1] + grid_point.get_height() // 2), (mx, my),10)
-            for num, rect in enumerate(grid_points):
-                if rect.collidepoint(mx,my) and num != active_point:
-                    spell_cast[2].append([(grid_points[active_point][0] + grid_point.get_width() // 2,grid_points[active_point][1] + grid_point.get_height() // 2),(rect.x + rect.w//2, rect.y + rect.h//2)])
-                    spell_cast[3].append(num)
-                    active_point = num
-
-        if len(spell_cast[2]) != 0:  # drawing the existing line connections
-            for points in spell_cast[2]:
-                x1, y1 = points[0]
-                x2, y2 = points[1]
-                pygame.draw.line(screen,(0,0,0),(x1,y1),(x2,y2),10)
-
-        if grid_point_diff < 50:
-            grid_point_diff += 5
-        else:
-            grid_max = True
-        if gsl < 170:
-            gsl += 15
-
     # character code -----------------------------------------------------#
     character_hitbox = pygame.Rect(char_x - game_scroll[0] + 10,char_y - game_scroll[1] + 10,70,90)
     character_feet_hitbox = pygame.Rect(char_x - game_scroll[0] + 10,char_y - game_scroll[1] + 80,70,20)
@@ -412,6 +376,71 @@ while True:
     if char_acceleration >= 100:  # if player falls off the map, quit program (later implement life system)
         pygame.quit()
         sys.exit()
+
+    # spell casting code ------------------------------------------------------------------------#
+    if mb[0]:
+        spell_cast[0] = True
+        if spell_cast[1][0] == 0 and spell_cast[1][1] == 0:
+            spell_cast[1] = [mx, my]
+    else:
+        if len(spell_cast[3]) != 0:  # check if the user connected any grid points
+            for spell_name, spell_points in spells_dictionary.items():
+                if spell_points == spell_cast[3]:
+                    spell_cast[4][0] = spell_name
+            spell_cast[4][2] = spell_cast[1].copy()
+            print(spell_cast[4][0])
+
+        spell_cast[0] = False
+        spell_cast[1][0], spell_cast[1][1] = (0, 0)
+        spell_cast[2] = []
+        spell_cast[3] = []
+        grid_point_diff = 1
+        grid_points = []
+        active_point = 4
+        grid_max = False
+        gsl = 0
+
+    if spell_cast[0]:
+        for y in range(3):
+            for x in range(3):
+                grid_point_loc = [(spell_cast[1][0] - grid_point.get_width() // 2 - grid_point_diff * grid_scale) + x * grid_point_diff * grid_scale,(spell_cast[1][1] - grid_point.get_width() // 2 - grid_point_diff * grid_scale) + y * grid_point_diff * grid_scale]
+                if grid_max and len(grid_points) < 9:
+                    grid_points.append(pygame.Rect(grid_point_loc[0], grid_point_loc[1], grid_point.get_width(),grid_point.get_height()))
+                screen.blit(grid_point, grid_point_loc)
+
+        if len(grid_points) != 0:
+            pygame.draw.line(screen, (0, 0, 0), (grid_points[active_point][0] + grid_point.get_width() // 2,grid_points[active_point][1] + grid_point.get_height() // 2),(mx, my), 10)
+            for num, rect in enumerate(grid_points):
+                if rect.collidepoint(mx, my) and num != active_point:
+                    spell_cast[2].append([(grid_points[active_point][0] + grid_point.get_width() // 2,grid_points[active_point][1] + grid_point.get_height() // 2),(rect.x + rect.w // 2, rect.y + rect.h // 2)])
+                    spell_cast[3].append(num)
+                    active_point = num
+
+        if len(spell_cast[2]) != 0:  # drawing the existing line connections
+            for points in spell_cast[2]:
+                x1, y1 = points[0]
+                x2, y2 = points[1]
+                pygame.draw.line(screen, (0, 0, 0), (x1, y1), (x2, y2), 10)
+
+        if grid_point_diff < 50:
+            grid_point_diff += 5
+        else:
+            grid_max = True
+        if gsl < 170:
+            gsl += 15
+
+    # spell animation handling
+    if spell_cast[4][0] != '':  # check if spell was cast
+        current_spell_frame = animations_dictionary[spell_cast[4][0]][spell_cast[4][1]]
+        csf_surf = animation_frame_surfaces[current_spell_frame]
+        if spell_cast[4][0] == 'slash':
+            csf_center = (spell_cast[4][2][0] - csf_surf.get_width()//2, spell_cast[4][2][1] - csf_surf.get_height()//2)
+        elif spell_cast[4][0] == 'thunder':
+            csf_center = (spell_cast[4][2][0] - csf_surf.get_width()//2, spell_cast[4][2][1] - csf_surf.get_height() + 50)
+        screen.blit(csf_surf, csf_center)
+        spell_cast[4][1] += 1
+        if spell_cast[4][1] >= len(animations_dictionary[spell_cast[4][0]]):
+            spell_cast[4] = ['', 0, [0, 0]]
 
     # drawing the character and its hitboxes
     # pygame.draw.rect(screen,(255,0,0),character_hitbox,1)

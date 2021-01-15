@@ -6,6 +6,7 @@ import random
 import sys
 
 import data.scripts.math_functions as m
+import data.scripts.effects as e
 
 # setting up pygame ---------------------------------------------#
 
@@ -17,13 +18,16 @@ temp_display = pygame.Surface((300,300))
 clock = pygame.time.Clock()
 # pygame.mouse.set_visible(False)
 FPS = 60
-
+frame_count = 0
 # helpful functions ---------------------------------------------#
 
 
-def load_image(filename):
+def load_image(filename,*args):
     surface = pygame.image.load('data/images/' + filename + '.png')
-    surface.set_colorkey((0,0,0))  # remove black background
+    if len(args) != 0 and args[0]:
+        surface.set_colorkey((255,255,255))
+    else:
+        surface.set_colorkey((0,0,0))  # remove black background
     return surface
 
 
@@ -62,13 +66,19 @@ def change_animation(animation_name,frame,new_animation,lock):
 
 # loading in game variables -------------------------------------#
 
-
 # animations
-animations_dictionary['idle'] = load_animation('data/images/animations/idle',[15,15])
+animations_dictionary['idle'] = load_animation('data/images/animations/idle',[20,20])
 animations_dictionary['walk'] = load_animation('data/images/animations/walk',[10,10,10])
-animations_dictionary['jump'] = load_animation('data/images/animations/jump',[2,2,10,2,5,1])
+animations_dictionary['jump'] = load_animation('data/images/animations/jump',[2,2,4,2,4,1])
 animations_dictionary['slash'] = load_animation('data/images/animations/slash',[10,8,6,4,3],size=(200,200))
 animations_dictionary['thunder'] = load_animation('data/images/animations/thunder',[2,2,2,2,2,2,2,2,2,2,5,2,2,60],size=(105,355))
+
+# game HUD
+mana_bar = load_image('mana_bar',True).convert()
+mana_bar = pygame.transform.scale(mana_bar,(300,60))
+
+# enemies
+active_enemies = []
 
 # char animation variables
 char_current_animation = 'idle'  # create variable to hold character's current animation
@@ -100,17 +110,19 @@ char_jump = False
 char_fall = False
 char_acceleration = 0
 char_prev_pos = 0
-shadow_col = pygame.Color(0,0,0, a=200)
-char_scythe = pygame.image.load('data/images/scythe.png').convert()
+char_mana = 255
+# char_scythe = pygame.image.load('data/images/scythe.png').convert()
+char_scythe = load_image('scythe',True).convert()
 char_scythe = pygame.transform.scale(char_scythe,(135,135))
-char_scythe.set_colorkey((255,255,255))
+char_shadow = load_image('char_shadow',True).convert()
+display_shadow = True
 
 # char spell casting variables
-grid_point = pygame.image.load('data/images/grid_point.png').convert()
-spell_bg = pygame.image.load('data/images/spell_bg.png').convert()
-grid_point.set_colorkey((255,255,255))
-spell_bg.set_colorkey((255,255,255))
+# grid_point = pygame.image.load('data/images/grid_point.png').convert()
+grid_point = load_image('grid_point',True).convert()
 grid_point = pygame.transform.scale(grid_point,(30,30))
+# spell_bg = pygame.image.load('data/images/spell_bg.png').convert()
+spell_bg = load_image('spell_bg',True).convert()
 grid_scale = 1  # adjust the gap between grid points
 grid_point_diff = 1
 grid_points = []
@@ -118,15 +130,14 @@ grid_max = False
 active_point = 4
 
 spells_dictionary = {
-    'fireball': [3, 0, 1, 2, 5, 8, 7, 6],
-    'slash': [2, 1, 0, 3, 6],
-    'thunder': [1, 3, 4, 5, 7]
+    'fireball': [[3, 0, 1, 2, 5, 8, 7, 6],200],  # spell pattern, cost
+    'slash': [[2, 1, 0, 3, 6],50],
+    'thunder': [[1, 3, 4, 5, 7],100]
 }
 
 spell_cast = [False,[0,0],[],[],['',0,[0,0]]]  # spell active, grid location, line points, points touched, [current spell active, its frame,[location]]
 
 # glitch colours
-glitch_bg = (10, 7, 44)
 glitch_colours = [(16, 26, 86),(22, 45, 118),(36, 86, 196),(195, 20, 118),(51, 7, 57),(28, 93, 129),(163, 127, 241),(99, 24, 79),(69, 173, 204)]
 bn = 30
 sn = 100
@@ -136,7 +147,6 @@ f = open('data/maps/map_one.txt','r')
 map_one_data = [[tile for tile in tile_row.rstrip("\n")] for tile_row in f]
 osu_font = pygame.font.Font('data/Aller_Bd.ttf', 30)
 
-print(animation_frame_surfaces)
 # main loop -----------------------------------------------------#
 while True:
     # some variables
@@ -149,8 +159,8 @@ while True:
     screen.fill((82, 96, 110))
 
     # control game scroll
-    game_scroll[0] += (char_x - game_scroll[0] - 450 + 37) / 20
-    game_scroll[1] += (char_y - game_scroll[1] - 300 + 50) / 20
+    game_scroll[0] += (char_x - game_scroll[0] - 450 + 37) / 40
+    game_scroll[1] += (char_y - game_scroll[1] - 300 + 50) / 40
 
     # to display mouse coordinates
     mx, my = pygame.mouse.get_pos()
@@ -258,37 +268,44 @@ while True:
 
     # making glitch effect for spell casting ----------------------------------------------#
     if spell_cast[0]:
-        glitch_bg_sl = pygame.Surface((600, 600))
-        glitch_bg_fl = pygame.Surface((600, 600))
-        glitch_bg = pygame.Surface((600, 600))
-        glitch_bg.fill((10, 7, 44))
-        glitch_bg.set_alpha(50)
-        glitch_bg_fl.set_colorkey((0, 0, 0))
-        frame_bg = spell_bg.copy()
+        # glitch_bg_sl = pygame.Surface((600, 600))
+        # glitch_bg_fl = pygame.Surface((600, 600))
+        # glitch_bg = pygame.Surface((600, 600))
+        # glitch_bg.fill((10, 7, 44))
+        # glitch_bg.set_alpha(50)
+        # glitch_bg_fl.set_colorkey((0, 0, 0))
+        # frame_bg = spell_bg.copy()
+        #
+        # for _ in range(bn):
+        #     colour = random.choice(glitch_colours)
+        #     w, h = random.randint(300, 400), random.randint(75, 100)
+        #     x, y = random.randint(-50, 550), random.randint(0, 550)
+        #     pygame.draw.rect(glitch_bg_sl, colour, (x, y, w, h), 0)
+        #
+        # glitch_bg_sl.set_alpha(100)
+        #
+        # for _ in range(sn):
+        #     colour = random.choice(glitch_colours)
+        #     w, h = random.randint(100, 220), random.randint(4, 7)
+        #     x, y = random.randint(-50, 550), random.randint(0, 550)
+        #     pygame.draw.rect(glitch_bg_fl, colour, (x, y, w, h), 0)
+        #
+        # glitch_bg = pygame.transform.scale(glitch_bg, (gsl, gsl))
+        # glitch_bg_sl = pygame.transform.scale(glitch_bg_sl, (gsl, gsl))
+        # glitch_bg_fl = pygame.transform.scale(glitch_bg_fl, (gsl, gsl))
+        # frame_bg = pygame.transform.scale(frame_bg, (int(gsl * 1.5), int(gsl * 1.5)))
 
-        for _ in range(bn):
-            colour = random.choice(glitch_colours)
-            w, h = random.randint(300, 400), random.randint(75, 100)
-            x, y = random.randint(-50, 550), random.randint(0, 550)
-            pygame.draw.rect(glitch_bg_sl, colour, (x, y, w, h), 0)
-
-        glitch_bg_sl.set_alpha(100)
-
-        for _ in range(sn):
-            colour = random.choice(glitch_colours)
-            w, h = random.randint(100, 220), random.randint(4, 7)
-            x, y = random.randint(-50, 550), random.randint(0, 550)
-            pygame.draw.rect(glitch_bg_fl, colour, (x, y, w, h), 0)
-
-        glitch_bg = pygame.transform.scale(glitch_bg, (gsl, gsl))
-        glitch_bg_sl = pygame.transform.scale(glitch_bg_sl, (gsl, gsl))
-        glitch_bg_fl = pygame.transform.scale(glitch_bg_fl, (gsl, gsl))
-        frame_bg = pygame.transform.scale(frame_bg, (int(gsl * 1.5), int(gsl * 1.5)))
+        glitch_bg, glitch_bg_sl, glitch_bg_fl, frame_bg = e.create_glitch_effect(gsl,frame=spell_bg.copy())
 
         screen.blit(glitch_bg,(spell_cast[1][0] - glitch_bg.get_width() // 2, spell_cast[1][1] - glitch_bg.get_height() // 2))
         screen.blit(glitch_bg_sl, (spell_cast[1][0] - glitch_bg_sl.get_width() // 2, spell_cast[1][1] - glitch_bg_sl.get_height() // 2))
         screen.blit(glitch_bg_fl, (spell_cast[1][0] - glitch_bg_fl.get_width() // 2, spell_cast[1][1] - glitch_bg_fl.get_height() // 2))
         screen.blit(frame_bg,(spell_cast[1][0] - frame_bg.get_width() // 2, spell_cast[1][1] - frame_bg.get_height() // 2))
+
+        # screen.blit(glitch_bg,(spell_cast[1][0] - glitch_bg.get_width() // 2, spell_cast[1][1] - glitch_bg.get_height() // 2))
+        # screen.blit(glitch_bg_sl, (spell_cast[1][0] - glitch_bg_sl.get_width() // 2, spell_cast[1][1] - glitch_bg_sl.get_height() // 2))
+        # screen.blit(glitch_bg_fl, (spell_cast[1][0] - glitch_bg_fl.get_width() // 2, spell_cast[1][1] - glitch_bg_fl.get_height() // 2))
+        # screen.blit(frame_bg,(spell_cast[1][0] - frame_bg.get_width() // 2, spell_cast[1][1] - frame_bg.get_height() // 2))
 
     mx, my = pygame.mouse.get_pos()
     mb = pygame.mouse.get_pressed(3)
@@ -363,8 +380,11 @@ while True:
     if not char_fall:
         for num, block_hitbox in enumerate(blocks):
             if character_feet_shadow.colliderect(block_hitbox[0]):
+                display_shadow = True
                 block_touched = True
         else:
+            if not block_touched:
+                display_shadow = False
             if not block_touched and not char_jump:
                 char_fall = True
                 char_acceleration = 10
@@ -384,11 +404,13 @@ while True:
             spell_cast[1] = [mx, my]
     else:
         if len(spell_cast[3]) != 0:  # check if the user connected any grid points
-            for spell_name, spell_points in spells_dictionary.items():
-                if spell_points == spell_cast[3]:
-                    spell_cast[4][0] = spell_name
+            for spell_name, spell_info in spells_dictionary.items():
+                spell_points, spell_cost = spell_info
+                if char_mana - spell_cost > 0:
+                    if spell_points == spell_cast[3]:
+                        spell_cast[4][0] = spell_name
+                        char_mana -= spell_cost
             spell_cast[4][2] = spell_cast[1].copy()
-            print(spell_cast[4][0])
 
         spell_cast[0] = False
         spell_cast[1][0], spell_cast[1][1] = (0, 0)
@@ -426,6 +448,7 @@ while True:
             grid_point_diff += 5
         else:
             grid_max = True
+
         if gsl < 170:
             gsl += 15
 
@@ -442,11 +465,13 @@ while True:
         if spell_cast[4][1] >= len(animations_dictionary[spell_cast[4][0]]):
             spell_cast[4] = ['', 0, [0, 0]]
 
-    # drawing the character and its hitboxes
+    # character graphics code ------------------------------------------------------------------------#
     # pygame.draw.rect(screen,(255,0,0),character_hitbox,1)
     # pygame.draw.rect(screen,(0,255,0),character_feet_hitbox,1)
-    pygame.draw.rect(screen, shadow_col, character_feet_shadow, 0)
-
+    # pygame.draw.rect(screen, shadow_col, character_feet_shadow, 0)
+    char_shadow = pygame.transform.scale(char_shadow,(character_feet_shadow.w,character_feet_shadow.h))
+    if display_shadow:
+        screen.blit(char_shadow,character_feet_shadow)
     char_current_frame += 1
     if char_current_frame >= len(animations_dictionary[char_current_animation]) and char_current_animation != 'jump':  # if the current frame is equal to the list length, reset it to 0
         char_current_frame = 0
@@ -457,6 +482,21 @@ while True:
     char_frame_to_display = animation_frame_surfaces[char_frame_name]
     screen.blit(pygame.transform.flip(char_scythe,char_animation_flip, False), (char_x - game_scroll[0] - 15,char_y - game_scroll[1] - 50))
     screen.blit(pygame.transform.flip(char_frame_to_display,char_animation_flip,False),(char_x - game_scroll[0],char_y - game_scroll[1]))  # flip to make the character face the right way
+
+    # HUD ----------------------------------------------------------------------------#
+
+    screen.blit(mana_bar, (0, 20))
+    mana_bar_fill_bg, mana_bar_fill_sl, mana_bar_fill_fl = e.create_glitch_effect(char_mana, height=10)
+    screen.blit(mana_bar_fill_bg, (6, 45))
+    screen.blit(mana_bar_fill_sl, (6, 45))
+    screen.blit(mana_bar_fill_fl, (6, 45))
+
+    if char_mana <= 255 and frame_count % 5 == 0:
+        char_mana += 1
+
+    frame_count += 1
+    if frame_count > 60:
+        frame_count = 0
 
     pygame.display.flip()
     clock.tick(FPS)

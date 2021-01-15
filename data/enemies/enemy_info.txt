@@ -1,0 +1,1 @@
+slime: ['name',hp,current_frame,hitbox,location,[toxic trails]]

@@ -95,7 +95,10 @@ char_jump = False
 char_fall = False
 char_acceleration = 0
 char_prev_pos = 0
-shadow_col = pygame.Color(255, 0, 0, a=200)
+shadow_col = pygame.Color(0,0,0, a=200)
+char_scythe = pygame.image.load('data/images/scythe.png').convert()
+char_scythe = pygame.transform.scale(char_scythe,(135,135))
+char_scythe.set_colorkey((255,255,255))
 
 # char spell casting variables
 grid_point = pygame.image.load('data/images/grid_point.png').convert()
@@ -103,13 +106,19 @@ spell_bg = pygame.image.load('data/images/spell_bg.png').convert()
 grid_point.set_colorkey((255,255,255))
 spell_bg.set_colorkey((255,255,255))
 grid_point = pygame.transform.scale(grid_point,(30,30))
-grid_scale = 1.3
+grid_scale = 1  # adjust the gap between grid points
 grid_point_diff = 1
 grid_points = []
 grid_max = False
 active_point = 4
 
-spell_cast = [False,[0,0],[],[]]  # spell active, grid location, line points, points touched
+spells_dictionary = {
+    'fireball': [3, 0, 1, 2, 5, 8, 7, 6],
+    'slash': [2, 1, 0, 3, 6],
+    'thunder': [1, 3, 4, 5, 7]
+}
+
+spell_cast = [False,[0,0],[],[],[None,0]]  # spell active, grid location, line points, points touched, [current spell active, its frame]
 
 # glitch colours
 glitch_bg = (10, 7, 44)
@@ -276,6 +285,11 @@ while True:
         if spell_cast[1][0] == 0 and spell_cast[1][1] == 0:
             spell_cast[1] = [mx,my]
     else:
+        if len(spell_cast[3]) != 0:  # check if the user connected any grid points
+            for spell_name, spell_points in spells_dictionary.items():
+                if spell_points == spell_cast[3]:
+                    print("spell casted:", spell_name)
+
         spell_cast[0] = False
         spell_cast[1][0], spell_cast[1][1] = (0,0)
         spell_cast[2] = []
@@ -312,7 +326,7 @@ while True:
             grid_point_diff += 5
         else:
             grid_max = True
-        if gsl < 200:
+        if gsl < 170:
             gsl += 15
 
     # character code -----------------------------------------------------#
@@ -400,8 +414,8 @@ while True:
         sys.exit()
 
     # drawing the character and its hitboxes
-    pygame.draw.rect(screen,(255,0,0),character_hitbox,1)
-    pygame.draw.rect(screen,(0,255,0),character_feet_hitbox,1)
+    # pygame.draw.rect(screen,(255,0,0),character_hitbox,1)
+    # pygame.draw.rect(screen,(0,255,0),character_feet_hitbox,1)
     pygame.draw.rect(screen, shadow_col, character_feet_shadow, 0)
 
     char_current_frame += 1
@@ -412,10 +426,9 @@ while True:
 
     char_frame_name = animations_dictionary[char_current_animation][char_current_frame]  # find frame name depending on char current frame
     char_frame_to_display = animation_frame_surfaces[char_frame_name]
+    screen.blit(pygame.transform.flip(char_scythe,char_animation_flip, False), (char_x - game_scroll[0] - 15,char_y - game_scroll[1] - 50))
     screen.blit(pygame.transform.flip(char_frame_to_display,char_animation_flip,False),(char_x - game_scroll[0],char_y - game_scroll[1]))  # flip to make the character face the right way
 
-    # screen.blit(text,text_rect)
-    print(char_current_animation)
     pygame.display.flip()
     clock.tick(FPS)
 

@@ -72,6 +72,7 @@ animations_dictionary['walk'] = load_animation('data/images/animations/walk',[10
 animations_dictionary['jump'] = load_animation('data/images/animations/jump',[2,2,4,2,4,1])
 animations_dictionary['slash'] = load_animation('data/images/animations/slash',[10,8,6,4,3],size=(200,200))
 animations_dictionary['thunder'] = load_animation('data/images/animations/thunder',[2,2,2,2,2,2,2,2,2,2,5,2,2,60],size=(105,355))
+animations_dictionary['slime'] = load_animation('data/enemies/slime',[15,15,15],size=(85,55))
 
 # game HUD
 mana_bar = load_image('mana_bar',True).convert()
@@ -98,7 +99,7 @@ green_rock = load_image('green_rock').convert()
 green_rock = pygame.transform.scale(green_rock,(80,80))
 found_tiles = False
 found_tiles_ypos = False
-bv = 51
+bv = 50
 
 char_x, char_y = (100,100)
 char_speed = 3
@@ -169,11 +170,12 @@ while True:
     text_rect.center = (800, 40)
 
     # # test spell casting
-    # current_spell_frame = animations_dictionary['thunder'][spell_cast[4][1]]
+    # current_spell_frame = animations_dictionary['slime'][spell_cast[4][1]]
     # csf_surf = animation_frame_surfaces[current_spell_frame]
-    # screen.blit(csf_surf, (0, 0))
+    # screen.blit(csf_surf, (0, 100))
+    # pygame.draw.rect(screen,(255,0,0),(0,100,csf_surf.get_width(),csf_surf.get_height()),1)
     # spell_cast[4][1] += 1
-    # if spell_cast[4][1] >= len(animations_dictionary['thunder']):
+    # if spell_cast[4][1] >= len(animations_dictionary['slime']):
     #     spell_cast[4][1] = 0
 
     # event detection -----------------------------------------------------#
@@ -215,7 +217,11 @@ while True:
 
     # rendering map -----------------------------------------------------#
 
+    enemy_tiles = [[]]
+    first_etf = False
+    pfet = 0
     for y, tile_row in enumerate(map_one_data):
+        found_e_tile = False
         for x,tile in enumerate(tile_row):
             if tile != "0" and tile != "4":  # append the ground tile
                 block_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0], (10 + x * bv + y * bv) - game_scroll[1], 101, 101)
@@ -233,6 +239,23 @@ while True:
                     rocks.append([rock_rect,rock_hitbox])
                 else:
                     rocks.append(None)
+                if tile == "e":  # check for enemy tile
+                    if not first_etf:  # only execute once
+                        pfet = y
+                        first_etf = True
+                        found_e_tile = True
+                    if not found_e_tile:
+                        if y - 1 == pfet:
+                            enemy_tiles[-1].append(block_rect)
+                            pfet = y
+                            found_e_tile = True
+                        else:
+                            enemy_tiles.append([])
+                            enemy_tiles[-1].append(block_rect)
+                            pfet = y
+                            found_e_tile = True
+                    else:
+                        enemy_tiles[-1].append(block_rect)
             elif tile == "4":
                 block_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0],(10 + x * bv + y * bv) - game_scroll[1], 101, 101)
                 bridge_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0],(10 + x * bv + y * bv) - game_scroll[1], bridge.get_width(),bridge.get_height())
@@ -265,6 +288,10 @@ while True:
             if rocks[num] is not None:
                 screen.blit(green_rock,rocks[num][0])
                 # pygame.draw.rect(screen,(0,0,255),rocks[num][1],5)
+
+    for area in enemy_tiles:
+        for e_tile in area:
+            pygame.draw.rect(screen, (255, 0, 0), e_tile, 1)
 
     # making glitch effect for spell casting ----------------------------------------------#
     if spell_cast[0]:

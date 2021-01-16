@@ -71,15 +71,16 @@ animations_dictionary['idle'] = load_animation('data/images/animations/idle',[20
 animations_dictionary['walk'] = load_animation('data/images/animations/walk',[10,10,10])
 animations_dictionary['jump'] = load_animation('data/images/animations/jump',[2,2,4,2,4,1])
 animations_dictionary['slash'] = load_animation('data/images/animations/slash',[10,8,6,4,3],size=(200,200))
-animations_dictionary['thunder'] = load_animation('data/images/animations/thunder',[2,2,2,2,2,2,2,2,2,2,5,2,2,60],size=(105,355))
-animations_dictionary['slime'] = load_animation('data/enemies/slime',[15,15,15],size=(85,55))
+animations_dictionary['thunder'] = load_animation('data/images/animations/thunder',[2,2,2,2,2,2,2,2,2,2,5,2,2,2],size=(105,355))
+animations_dictionary['slime'] = load_animation('data/enemies/slime/moving',[15,15,15],size=(85,55))
 
 # game HUD
 mana_bar = load_image('mana_bar',True).convert()
 mana_bar = pygame.transform.scale(mana_bar,(300,60))
 
 # enemies
-active_enemies = []
+slime1,slime2,slime3 = ['slime',[0,0],0,[],'right',None],['slime',[0,0],0,[],'right',None],['slime',[0,0],0,[],'right',None]
+active_enemies = [slime1,slime2,slime3]
 
 # char animation variables
 char_current_animation = 'idle'  # create variable to hold character's current animation
@@ -289,9 +290,72 @@ while True:
                 screen.blit(green_rock,rocks[num][0])
                 # pygame.draw.rect(screen,(0,0,255),rocks[num][1],5)
 
-    for area in enemy_tiles:
-        for e_tile in area:
-            pygame.draw.rect(screen, (255, 0, 0), e_tile, 1)
+    for j, area in enumerate(enemy_tiles):
+        for i, e_tile in enumerate(area):
+            if i == 0 and active_enemies[j][1][0] == 0 and active_enemies[j][1][1] == 0:
+                active_enemies[j][1] = [e_tile.x, e_tile.y]
+            # pygame.draw.rect(screen, (255, 0, 0), e_tile, 1)
+            active_enemies[j][3].append(e_tile)  # append each 'territory tile' to slime
+
+    for enemy in active_enemies:
+        enemy_loc = enemy[1]
+        enemy_left = False
+        enemy_cf = animations_dictionary[enemy[0]][enemy[2]]
+        enemy_surf = animation_frame_surfaces[enemy_cf]
+        enemy_hitbox = pygame.Rect(enemy_loc[0] - game_scroll[0],enemy_loc[1] - game_scroll[1],animation_frame_surfaces[enemy_cf].get_width(),animation_frame_surfaces[enemy_cf].get_height())
+        enemy[5] = enemy_hitbox
+        screen.blit(enemy_surf,[enemy_loc[0] - game_scroll[0], enemy_loc[1] - game_scroll[1]])
+        pygame.draw.rect(screen,(0,255,0),enemy_hitbox,1)
+        enemy[2] += 1
+
+        # handle enemy movement ----------------------------------------#
+        # moving enemy on screen
+        if enemy[4] == 'right':
+            enemy[1][0] += 0.5
+            enemy[1][1] += 0.5
+        elif enemy[4] == 'left':
+            enemy[1][0] -= 0.5
+            enemy[1][1] -= 0.5
+        elif enemy[4] == 'up':
+            enemy[1][0] += 0.5
+            enemy[1][1] -= 0.5
+        elif enemy[4] == 'down':
+            enemy[1][0] -= 0.5
+            enemy[1][1] += 0.5
+
+        # check if enemy left territory
+        for territory_tile in enemy[3]:
+            # pygame.draw.rect(screen,(0,0,255),territory_tile,2)
+            if territory_tile.colliderect(enemy_hitbox):
+                break
+        else:
+            enemy_left = True
+
+        # handle direction changing
+        if enemy_left:
+            direc = enemy[4]
+            if direc == 'right':
+                enemy[4] = 'down'
+                enemy[1][0] -= 25
+                enemy[1][1] -= 25
+            elif direc == 'left':
+                enemy[1][0] += 25
+                enemy[1][1] += 25
+                enemy[4] = 'up'
+            elif direc == 'up':
+                enemy[1][0] -= 10
+                enemy[1][1] += 10
+                enemy[4] = 'right'
+            elif direc == 'down':
+                enemy[1][0] += 10
+                enemy[1][1] -= 10
+                enemy[4] = 'left'
+            enemy_left = False
+
+        if enemy[2] >= len(animations_dictionary[enemy[0]]):  # if the current frame is equal to the enemy's max frame
+            enemy[2] = 0
+
+        enemy[3] = []  # clear the enemy's territory tiles
 
     # making glitch effect for spell casting ----------------------------------------------#
     if spell_cast[0]:
@@ -485,12 +549,20 @@ while True:
         csf_surf = animation_frame_surfaces[current_spell_frame]
         if spell_cast[4][0] == 'slash':
             csf_center = (spell_cast[4][2][0] - csf_surf.get_width()//2, spell_cast[4][2][1] - csf_surf.get_height()//2)
+            csf_hitbox = pygame.Rect(csf_center[0], csf_center[1], csf_surf.get_width(), csf_surf.get_height())
         elif spell_cast[4][0] == 'thunder':
             csf_center = (spell_cast[4][2][0] - csf_surf.get_width()//2, spell_cast[4][2][1] - csf_surf.get_height() + 50)
+            csf_hitbox = pygame.Rect(csf_center[0], csf_center[1] + 350, csf_surf.get_width(), csf_surf.get_height()-400)
         screen.blit(csf_surf, csf_center)
+        pygame.draw.rect(screen,(0,255,0),csf_hitbox,1)
         spell_cast[4][1] += 1
         if spell_cast[4][1] >= len(animations_dictionary[spell_cast[4][0]]):
             spell_cast[4] = ['', 0, [0, 0]]
+
+    # code for combat detection-----------------------------------------------------------------------#
+        for enemy in active_enemies:
+            if enemy[5].colliderect(csf_hitbox) and spell_cast[4][1] == 1:  # makes sure detection occurs once per spell cast
+                print("enemy hit!")
 
     # character graphics code ------------------------------------------------------------------------#
     # pygame.draw.rect(screen,(255,0,0),character_hitbox,1)

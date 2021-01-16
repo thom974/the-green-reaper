@@ -72,15 +72,18 @@ animations_dictionary['walk'] = load_animation('data/images/animations/walk',[10
 animations_dictionary['jump'] = load_animation('data/images/animations/jump',[2,2,4,2,4,1])
 animations_dictionary['slash'] = load_animation('data/images/animations/slash',[10,8,6,4,3],size=(200,200))
 animations_dictionary['thunder'] = load_animation('data/images/animations/thunder',[2,2,2,2,2,2,2,2,2,2,5,2,2,2],size=(105,355))
-animations_dictionary['slime'] = load_animation('data/enemies/slime/moving',[15,15,15],size=(85,55))
+animations_dictionary['slime'] = load_animation('data/enemies/slime',[15,15,15],size=(85,55))
+animations_dictionary['slime_dmg'] = load_animation('data/enemies/damage/slime_dmg',[10],size=(85,55))
 
 # game HUD
 mana_bar = load_image('mana_bar',True).convert()
 mana_bar = pygame.transform.scale(mana_bar,(300,60))
 
 # enemies
-slime1,slime2,slime3 = ['slime',[0,0],0,[],'right',None],['slime',[0,0],0,[],'right',None],['slime',[0,0],0,[],'right',None]
+slime1,slime2,slime3 = ['slime',[0,0],0,[],'right',None,'move',False,2,255],['slime',[0,0],0,[],'right',None,'move',False,2,255],['slime',[0,0],0,[],'right',None,'move',False,2,255]
 active_enemies = [slime1,slime2,slime3]
+hp_bar = load_image('health_bar',True).convert()
+hp_bar = pygame.transform.scale(hp_bar,(55,15))
 
 # char animation variables
 char_current_animation = 'idle'  # create variable to hold character's current animation
@@ -88,7 +91,10 @@ char_current_frame = 0
 char_animation_flip = False  # flip the frame depending on direction moving
 char_animation_lock = False
 
+# level variables
 game_scroll = [0,0]
+number_of_enemies = 0
+found_enemies = False
 
 bridge = load_image('bridge').convert()
 bridge = pygame.transform.scale(bridge,(101,169))
@@ -264,6 +270,10 @@ while True:
                 trees.append(None)
                 rocks.append(None)
 
+    # save original number of enemies
+    if not found_enemies:
+        number_of_enemies = len(active_enemies)
+
     # create a list ONCE containing boolean values for each tile
     if not found_tiles:
         tile_render_states = [False for block in blocks]
@@ -297,15 +307,26 @@ while True:
             # pygame.draw.rect(screen, (255, 0, 0), e_tile, 1)
             active_enemies[j][3].append(e_tile)  # append each 'territory tile' to slime
 
-    for enemy in active_enemies:
+    # drawing the enemies-------------------------------------------------------------------#
+    for e_num, enemy in enumerate(active_enemies):
         enemy_loc = enemy[1]
         enemy_left = False
-        enemy_cf = animations_dictionary[enemy[0]][enemy[2]]
+        if enemy[6] == 'move':
+            enemy_cf = animations_dictionary[enemy[0]][enemy[2]]
+        else:
+            enemy_cf = animations_dictionary['slime_dmg'][enemy[2]]
         enemy_surf = animation_frame_surfaces[enemy_cf]
+        enemy_surf.set_alpha(enemy[9])
         enemy_hitbox = pygame.Rect(enemy_loc[0] - game_scroll[0],enemy_loc[1] - game_scroll[1],animation_frame_surfaces[enemy_cf].get_width(),animation_frame_surfaces[enemy_cf].get_height())
         enemy[5] = enemy_hitbox
+        if enemy[7]:
+            screen.blit(hp_bar,[enemy_loc[0] - game_scroll[0] + 15, enemy_loc[1] - game_scroll[1] - 20])
+            health_val = pygame.Rect(enemy_loc[0] - game_scroll[0] + 20, enemy_loc[1] - game_scroll[1] - 16, enemy[8] * 25, 8)
+            pygame.draw.rect(screen,(255,0,0),health_val,0)
+        if enemy[8] <= 0:
+            enemy[9] -= 40
         screen.blit(enemy_surf,[enemy_loc[0] - game_scroll[0], enemy_loc[1] - game_scroll[1]])
-        pygame.draw.rect(screen,(0,255,0),enemy_hitbox,1)
+        # pygame.draw.rect(screen,(0,255,0),enemy_hitbox,1)
         enemy[2] += 1
 
         # handle enemy movement ----------------------------------------#
@@ -352,10 +373,19 @@ while True:
                 enemy[4] = 'left'
             enemy_left = False
 
-        if enemy[2] >= len(animations_dictionary[enemy[0]]):  # if the current frame is equal to the enemy's max frame
+        if enemy[2] >= len(animations_dictionary[enemy[0]]) and enemy[6] == 'move':  # if the current frame is equal to the enemy's max frame
             enemy[2] = 0
+        elif enemy[2] >= len(animations_dictionary['slime_dmg']) and enemy[6] == 'hurt':
+            enemy[2] = 0
+            enemy[6] = 'move'
 
         enemy[3] = []  # clear the enemy's territory tiles
+
+        if enemy[9] <= 0:
+            number_of_enemies -= 1  # subtract one from enemy counter
+            enemy[7] = False  # don't show hp bar
+
+    print(number_of_enemies)
 
     # making glitch effect for spell casting ----------------------------------------------#
     if spell_cast[0]:
@@ -562,7 +592,13 @@ while True:
     # code for combat detection-----------------------------------------------------------------------#
         for enemy in active_enemies:
             if enemy[5].colliderect(csf_hitbox) and spell_cast[4][1] == 1:  # makes sure detection occurs once per spell cast
-                print("enemy hit!")
+                enemy[2] = 0
+                enemy[6] = 'hurt'
+                enemy[7] = True
+                if spell_cast[4][0] == 'slash':
+                    enemy[8] -= 1
+                elif spell_cast[4][0] == 'thunder':
+                    enemy[8] -= 2
 
     # character graphics code ------------------------------------------------------------------------#
     # pygame.draw.rect(screen,(255,0,0),character_hitbox,1)

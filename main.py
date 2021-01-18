@@ -19,7 +19,7 @@ clock = pygame.time.Clock()
 # pygame.mouse.set_visible(False)
 FPS = 60
 frame_count = 0
-# helpful functions ---------------------------------------------#
+# helpful functions and code---------------------------------------------#
 
 
 def load_image(filename,*args):
@@ -64,6 +64,20 @@ def change_animation(animation_name,frame,new_animation,lock):
         return char_animation, char_frame
     return animation_name,frame
 
+
+def create_font(font_size):
+    return pygame.font.Font('data/Silver.ttf', font_size)
+
+
+# creating game over screen
+backdrop = pygame.Surface((900,600))
+backdrop.set_alpha(150)
+game_over_font = create_font(70)
+game_over_txt = game_over_font.render('game over.', True,(194, 194, 194))
+game_over_rect = game_over_txt.get_rect()
+game_over_rect.center = (450,300)
+
+
 # loading in game variables -------------------------------------#
 
 # animations
@@ -74,6 +88,8 @@ animations_dictionary['slash'] = load_animation('data/images/animations/slash',[
 animations_dictionary['thunder'] = load_animation('data/images/animations/thunder',[2,2,2,2,2,2,2,2,2,2,5,2,2,2],size=(105,355))
 animations_dictionary['slime'] = load_animation('data/enemies/slime',[15,15,15],size=(85,55))
 animations_dictionary['slime_dmg'] = load_animation('data/enemies/damage/slime_dmg',[10],size=(85,55))
+animations_dictionary['death'] = ''
+animations_dictionary['screen_glitch'] = ''
 
 # game HUD
 mana_bar = load_image('mana_bar',True).convert()
@@ -95,6 +111,7 @@ char_animation_lock = False
 game_scroll = [0,0]
 number_of_enemies = 0
 found_enemies = False
+save_screen = None
 
 bridge = load_image('bridge').convert()
 bridge = pygame.transform.scale(bridge,(101,169))
@@ -476,33 +493,34 @@ while True:
         character_feet_shadow = pygame.Rect(char_x - game_scroll[0] + 10,char_prev_ypos - game_scroll[1] + 80,70,20)
 
     # character movement
-    if char_up:
-        char_y -= char_speed
-        char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'walk',char_animation_lock)
-        if char_jump:
-            char_prev_ypos -= char_speed
-    if char_down:
-        char_y += char_speed
-        char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'walk',char_animation_lock)
-        if char_jump:
-            char_prev_ypos += char_speed
-    if char_left:
-        char_x -= char_speed
-        # for character sprite
-        char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'walk',char_animation_lock)
-        char_animation_flip = False
-    if char_right:
-        char_x += char_speed
-        # for character sprite
-        char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'walk',char_animation_lock)
-        char_animation_flip = True
-    if char_jump:  # handle character jumping
-        char_y -= char_acceleration
-        char_acceleration -= 1
-        if char_y - game_scroll[1] + 90 > character_feet_shadow.y:  # plus 90 to detect bottom edge of character
-            char_jump = False
-            char_animation_lock = False
-            char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'idle',char_animation_lock)
+    if char_alive:
+        if char_up:
+            char_y -= char_speed
+            char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'walk',char_animation_lock)
+            if char_jump:
+                char_prev_ypos -= char_speed
+        if char_down:
+            char_y += char_speed
+            char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'walk',char_animation_lock)
+            if char_jump:
+                char_prev_ypos += char_speed
+        if char_left:
+            char_x -= char_speed
+            # for character sprite
+            char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'walk',char_animation_lock)
+            char_animation_flip = False
+        if char_right:
+            char_x += char_speed
+            # for character sprite
+            char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'walk',char_animation_lock)
+            char_animation_flip = True
+        if char_jump:  # handle character jumping
+            char_y -= char_acceleration
+            char_acceleration -= 1
+            if char_y - game_scroll[1] + 90 > character_feet_shadow.y:  # plus 90 to detect bottom edge of character
+                char_jump = False
+                char_animation_lock = False
+                char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'idle',char_animation_lock)
 
     # check if character fallen
     block_touched = False
@@ -613,17 +631,35 @@ while True:
     # pygame.draw.rect(screen,(255,0,0),character_hitbox,1)
     # pygame.draw.rect(screen,(0,255,0),character_feet_hitbox,1)
     # pygame.draw.rect(screen, shadow_col, character_feet_shadow, 0)
+
+    if not char_alive:
+        if animations_dictionary['death'] == '':
+            if save_screen is None:
+                save_screen = screen.copy()
+            animations_dictionary['death'] = e.create_death_screen(10,pygame.transform.flip(char_frame_to_display,char_animation_flip,False))
+            char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'death',False)
+            char_animation_lock = True
+
     char_shadow = pygame.transform.scale(char_shadow,(character_feet_shadow.w,character_feet_shadow.h))
+
     if display_shadow:
         screen.blit(char_shadow,character_feet_shadow)
+
     char_current_frame += 1
     if char_current_frame >= len(animations_dictionary[char_current_animation]) and char_current_animation != 'jump':  # if the current frame is equal to the list length, reset it to 0
         char_current_frame = 0
+        if char_current_animation == 'death':
+            animations_dictionary['screen_glitch'] = e.create_glitch_screen(save_screen,20)
     if char_current_animation == 'jump' and char_current_frame >= len(animations_dictionary['jump']):
         char_current_frame = len(animations_dictionary['jump']) - 1
 
-    char_frame_name = animations_dictionary[char_current_animation][char_current_frame]  # find frame name depending on char current frame
-    char_frame_to_display = animation_frame_surfaces[char_frame_name]
+    if char_current_animation != 'death':
+        char_frame_name = animations_dictionary[char_current_animation][char_current_frame]  # find frame name depending on char current frame
+        char_frame_to_display = animation_frame_surfaces[char_frame_name]
+    else:
+        char_frame_to_display = animations_dictionary['death'][char_current_frame]
+
+
     screen.blit(pygame.transform.flip(char_scythe,char_animation_flip, False), (char_x - game_scroll[0] - 15,char_y - game_scroll[1] - 50))
     screen.blit(pygame.transform.flip(char_frame_to_display,char_animation_flip,False),(char_x - game_scroll[0],char_y - game_scroll[1]))  # flip to make the character face the right way
 
@@ -641,6 +677,12 @@ while True:
     frame_count += 1
     if frame_count > 60:
         frame_count = 0
+
+    if animations_dictionary['screen_glitch'] != '':
+        screen.blit(save_screen,(0,0))
+        screen.blit(animations_dictionary['screen_glitch'][char_current_frame % 3],(0,0))
+        screen.blit(backdrop,(0,0))
+        screen.blit(game_over_txt, game_over_rect)
 
     pygame.display.flip()
     clock.tick(FPS)

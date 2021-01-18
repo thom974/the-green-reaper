@@ -106,19 +106,4 @@ def create_glitch_screen(current_screen,num):
 
     return screen_frames
 
-# glitch_frames = create_death_screen(10)
-#
-# while True:
-#     for event in pygame.event.get():
-#         if event.type == pygame.QUIT:
-#             pygame.quit()
-#
-#     screen.fill((255,255,255))
-#
-#     for glitch_frame_list in glitch_frames:
-#         for j, glitch_frame in enumerate(glitch_frame_list):
-#             offset = random.randint(-20,20)
-#             screen.blit(glitch_frame,(150 + offset,150+j*100/10))
-#
-#     pygame.time.wait(1000)
-#     pygame.display.flip()
+

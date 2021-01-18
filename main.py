@@ -69,6 +69,19 @@ def create_font(font_size):
     return pygame.font.Font('data/Silver.ttf', font_size)
 
 
+def create_bg(vals):
+    w,x,y,z = vals
+    poly_points1 = [(0,150+x),(900,0+x),(900,100+x),(0,250+x)]
+    poly_points2 = [(0,350+y),(900,200+y),(900,300+y),(0,450+y)]
+    poly_points3 = [(0,550+z),(900,400+z),(900,500+z),(0,650+z)]
+    poly_points4 = [(0,750+w),(900,600+w),(900,700+w),(0,850+w)]
+
+    pygame.draw.polygon(screen,(82, 96, 110),poly_points1,0)
+    pygame.draw.polygon(screen,(82, 96, 110),poly_points2,0)
+    pygame.draw.polygon(screen,(82, 96, 110),poly_points3,0)
+    pygame.draw.polygon(screen,(82, 96, 110),poly_points4,0)
+
+
 # creating game over screen
 backdrop = pygame.Surface((900,600))
 backdrop.set_alpha(150)
@@ -77,6 +90,8 @@ game_over_txt = game_over_font.render('game over.', True,(194, 194, 194))
 game_over_rect = game_over_txt.get_rect()
 game_over_rect.center = (450,300)
 
+game_border = load_image('border',True).convert()
+game_border = pygame.transform.scale(game_border,(900,600))
 
 # loading in game variables -------------------------------------#
 
@@ -113,6 +128,7 @@ number_of_enemies = 0
 found_enemies = False
 save_screen = None
 
+# level tiles
 bridge = load_image('bridge').convert()
 bridge = pygame.transform.scale(bridge,(101,169))
 green_block = load_image('ground_green').convert()
@@ -124,6 +140,13 @@ green_rock = pygame.transform.scale(green_rock,(80,80))
 found_tiles = False
 found_tiles_ypos = False
 bv = 50
+
+clean_block = load_image('ground_clean').convert()
+clean_block = pygame.transform.scale(clean_block,(101,170))
+clean_tree = load_image('clean_tree').convert()
+clean_tree = pygame.transform.scale(clean_tree,(120,189))
+clean_rock = load_image('clean_rock').convert()
+clean_rock = pygame.transform.scale(clean_rock,(80,80))
 
 char_spawn = [100,0]
 char_x, char_y = (100,100)
@@ -138,6 +161,7 @@ char_acceleration = 0
 char_prev_pos = 0
 char_mana = 255
 char_alive = True
+char_loaded = False
 
 # char_scythe = pygame.image.load('data/images/scythe.png').convert()
 char_scythe = load_image('scythe',True).convert()
@@ -174,7 +198,7 @@ gsl = 0
 f = open('data/maps/map_one.txt','r')
 map_one_data = [[tile for tile in tile_row.rstrip("\n")] for tile_row in f]
 osu_font = pygame.font.Font('data/Aller_Bd.ttf', 30)
-
+bg_values = [-150,-150,-150,-150]
 # main loop -----------------------------------------------------#
 while True:
     # some variables
@@ -186,7 +210,8 @@ while True:
     character_feet_hitbox = pygame.Rect(char_x - game_scroll[0] + 10, char_y - game_scroll[1] + 80, 70, 20)
 
     # background
-    screen.fill((82, 96, 110))
+    screen.fill((45, 53, 61))
+    create_bg(bg_values)
 
     # control game scroll
     game_scroll[0] += (char_x - game_scroll[0] - 450 + 37) / 40
@@ -312,14 +337,14 @@ while True:
 
         if tile_render_states[num]:
             if block_info[1].h == 170:
-                screen.blit(green_block, block_info[0])
+                screen.blit(clean_block, block_info[0])
             elif block_info[1].h == 169:
                 screen.blit(bridge, block_info[0])
             if trees[num] is not None:
-                screen.blit(green_tree,trees[num][0])
+                screen.blit(clean_tree,trees[num][0])
                 # pygame.draw.rect(screen,(0,0,255),trees[num][1],5)
             if rocks[num] is not None:
-                screen.blit(green_rock,rocks[num][0])
+                screen.blit(clean_rock,rocks[num][0])
                 # pygame.draw.rect(screen,(0,0,255),rocks[num][1],5)
 
     for j, area in enumerate(enemy_tiles):
@@ -344,8 +369,9 @@ while True:
         enemy_hitbox = pygame.Rect(enemy_loc[0] - game_scroll[0],enemy_loc[1] - game_scroll[1],animation_frame_surfaces[enemy_cf].get_width(),animation_frame_surfaces[enemy_cf].get_height())
         enemy[5] = enemy_hitbox
 
-        if enemy_hitbox.colliderect(character_feet_hitbox):
-            char_alive = False
+        if char_loaded:
+            if enemy_hitbox.colliderect(character_feet_shadow) and enemy[9] >= 255:
+                char_alive = False
 
         if enemy[7]:
             screen.blit(hp_bar,[enemy_loc[0] - game_scroll[0] + 15, enemy_loc[1] - game_scroll[1] - 20])
@@ -662,14 +688,16 @@ while True:
 
     screen.blit(pygame.transform.flip(char_scythe,char_animation_flip, False), (char_x - game_scroll[0] - 15,char_y - game_scroll[1] - 50))
     screen.blit(pygame.transform.flip(char_frame_to_display,char_animation_flip,False),(char_x - game_scroll[0],char_y - game_scroll[1]))  # flip to make the character face the right way
+    char_loaded = True
 
     # HUD ----------------------------------------------------------------------------#
 
-    screen.blit(mana_bar, (0, 20))
+    screen.blit(game_border,(0,0))
+    screen.blit(mana_bar, (8, 30))
     mana_bar_fill_bg, mana_bar_fill_sl, mana_bar_fill_fl = e.create_glitch_effect(char_mana, height=10)
-    screen.blit(mana_bar_fill_bg, (6, 45))
-    screen.blit(mana_bar_fill_sl, (6, 45))
-    screen.blit(mana_bar_fill_fl, (6, 45))
+    screen.blit(mana_bar_fill_bg, (14, 55))
+    screen.blit(mana_bar_fill_sl, (14, 55))
+    screen.blit(mana_bar_fill_fl, (14, 55))
 
     if char_mana <= 255 and frame_count % 5 == 0:
         char_mana += 1

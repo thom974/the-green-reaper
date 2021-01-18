@@ -108,6 +108,7 @@ found_tiles = False
 found_tiles_ypos = False
 bv = 50
 
+char_spawn = [100,0]
 char_x, char_y = (100,100)
 char_speed = 3
 char_up = False
@@ -119,6 +120,8 @@ char_fall = False
 char_acceleration = 0
 char_prev_pos = 0
 char_mana = 255
+char_alive = True
+
 # char_scythe = pygame.image.load('data/images/scythe.png').convert()
 char_scythe = load_image('scythe',True).convert()
 char_scythe = pygame.transform.scale(char_scythe,(135,135))
@@ -162,6 +165,8 @@ while True:
     trees = []
     rocks = []
     char_center = (char_x - game_scroll[0] + 40,char_y - game_scroll[1] + 45)
+    character_hitbox = pygame.Rect(char_x - game_scroll[0] + 10, char_y - game_scroll[1] + 10, 70, 90)
+    character_feet_hitbox = pygame.Rect(char_x - game_scroll[0] + 10, char_y - game_scroll[1] + 80, 70, 20)
 
     # background
     screen.fill((82, 96, 110))
@@ -311,20 +316,28 @@ while True:
     for e_num, enemy in enumerate(active_enemies):
         enemy_loc = enemy[1]
         enemy_left = False
+
         if enemy[6] == 'move':
             enemy_cf = animations_dictionary[enemy[0]][enemy[2]]
         else:
             enemy_cf = animations_dictionary['slime_dmg'][enemy[2]]
+
         enemy_surf = animation_frame_surfaces[enemy_cf]
         enemy_surf.set_alpha(enemy[9])
         enemy_hitbox = pygame.Rect(enemy_loc[0] - game_scroll[0],enemy_loc[1] - game_scroll[1],animation_frame_surfaces[enemy_cf].get_width(),animation_frame_surfaces[enemy_cf].get_height())
         enemy[5] = enemy_hitbox
+
+        if enemy_hitbox.colliderect(character_feet_hitbox):
+            char_alive = False
+
         if enemy[7]:
             screen.blit(hp_bar,[enemy_loc[0] - game_scroll[0] + 15, enemy_loc[1] - game_scroll[1] - 20])
             health_val = pygame.Rect(enemy_loc[0] - game_scroll[0] + 20, enemy_loc[1] - game_scroll[1] - 16, enemy[8] * 25, 8)
             pygame.draw.rect(screen,(255,0,0),health_val,0)
+
         if enemy[8] <= 0:
             enemy[9] -= 40
+
         screen.blit(enemy_surf,[enemy_loc[0] - game_scroll[0], enemy_loc[1] - game_scroll[1]])
         # pygame.draw.rect(screen,(0,255,0),enemy_hitbox,1)
         enemy[2] += 1
@@ -385,8 +398,6 @@ while True:
             number_of_enemies -= 1  # subtract one from enemy counter
             enemy[7] = False  # don't show hp bar
 
-    print(number_of_enemies)
-
     # making glitch effect for spell casting ----------------------------------------------#
     if spell_cast[0]:
         # glitch_bg_sl = pygame.Surface((600, 600))
@@ -432,9 +443,6 @@ while True:
     mb = pygame.mouse.get_pressed(3)
 
     # character code -----------------------------------------------------#
-    character_hitbox = pygame.Rect(char_x - game_scroll[0] + 10,char_y - game_scroll[1] + 10,70,90)
-    character_feet_hitbox = pygame.Rect(char_x - game_scroll[0] + 10,char_y - game_scroll[1] + 80,70,20)
-
     # detect collision
     for rock in rocks:
         if rock is not None:
@@ -515,8 +523,9 @@ while True:
         char_acceleration += 1
 
     if char_acceleration >= 100:  # if player falls off the map, quit program (later implement life system)
-        pygame.quit()
-        sys.exit()
+        char_x, char_y = char_spawn
+        char_acceleration = 0
+        game_scroll = [0,0]
 
     # spell casting code ------------------------------------------------------------------------#
     if mb[0]:

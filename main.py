@@ -119,6 +119,8 @@ char_fall = False
 char_acceleration = 0
 char_prev_pos = 0
 char_mana = 255
+char_alive = True
+
 # char_scythe = pygame.image.load('data/images/scythe.png').convert()
 char_scythe = load_image('scythe',True).convert()
 char_scythe = pygame.transform.scale(char_scythe,(135,135))

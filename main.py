@@ -90,6 +90,11 @@ game_over_txt = game_over_font.render('game over.', True,(194, 194, 194))
 game_over_rect = game_over_txt.get_rect()
 game_over_rect.center = (450,300)
 
+level_transition = pygame.Surface((900,600))
+level_transition.fill((255,255,255))
+level_transition_alpha = 0
+level_fade = False
+
 game_border = load_image('border',True).convert()
 game_border = pygame.transform.scale(game_border,(900,600))
 
@@ -711,6 +716,16 @@ while True:
         screen.blit(animations_dictionary['screen_glitch'][char_current_frame % 3],(0,0))
         screen.blit(backdrop,(0,0))
         screen.blit(game_over_txt, game_over_rect)
+
+    # detect if level has been finished
+    if number_of_enemies == 0:
+        level_transition.set_alpha(level_transition_alpha)
+        screen.blit(level_transition,(0,0))
+        if level_transition_alpha < 400 and not level_fade:
+            level_transition_alpha += 10
+        else:
+            level_fade = True
+            level_transition_alpha -= 100
 
     pygame.display.flip()
     clock.tick(FPS)

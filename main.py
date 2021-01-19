@@ -87,13 +87,17 @@ def load_map(map_num):
     map_data = [[tile for tile in tile_row.rstrip("\n")] for tile_row in f]
     return map_data
 
+
 # creating game over screen
 backdrop = pygame.Surface((900,600))
 backdrop.set_alpha(150)
-game_over_font = create_font(70)
+game_over_font, game_over_font_2 = create_font(70), create_font(40)
 game_over_txt = game_over_font.render('game over.', True,(194, 194, 194))
 game_over_rect = game_over_txt.get_rect()
 game_over_rect.center = (450,300)
+game_over_txt_2 = game_over_font_2.render('press \'r\' to retry the level.', True, (204, 20, 20))
+game_over_rect_2 = game_over_txt_2.get_rect()
+game_over_rect_2.center = (450,350)
 
 level_transition = pygame.Surface((900,600))
 level_transition.fill((255,255,255))
@@ -122,9 +126,10 @@ mana_bar = load_image('mana_bar',True).convert()
 mana_bar = pygame.transform.scale(mana_bar,(300,60))
 
 # enemies
-slime_obj = ['slime',[0,0],0,[],'right',None,'move',False,2,255]
-# slime1,slime2,slime3 = ['slime',[0,0],0,[],'right',None,'move',False,2,255],['slime',[0,0],0,[],'right',None,'move',False,2,255],['slime',[0,0],0,[],'right',None,'move',False,2,255]
+slime_obj = ['slime',[0,0],0,[],'right',None,'move',False,2,255]  # name, location, current frame, enemy tiles, direction, hp_bar, animation, display hp_bar, hp, alpha
+tv_obj = ['tv',[],None]  # name, location, hitbox
 active_enemies = []
+active_tvs = []
 hp_bar = load_image('health_bar',True).convert()
 hp_bar = pygame.transform.scale(hp_bar,(55,15))
 
@@ -141,17 +146,22 @@ bg_values = [-150,-150,-150,-150]
 game_scroll = [0,0]
 number_of_enemies = 0
 found_enemies = False
+found_tvs = False
 save_screen = None
+level_retry = False
 
 # level tiles
 bridge = load_image('bridge').convert()
-bridge = pygame.transform.scale(bridge,(101,169))
+bridge_reverse = pygame.transform.flip(bridge,True,False)
+bridge, bridge_reverse = pygame.transform.scale(bridge,(101,169)), pygame.transform.scale(bridge_reverse,(101,169))
 green_block, pink_block = load_image('ground_green').convert(), load_image('ground_pink').convert()
 green_block, pink_block = pygame.transform.scale(green_block,(101,170)), pygame.transform.scale(pink_block,(101,170))
 green_tree, pink_tree = load_image('green_tree').convert(), load_image('pink_tree').convert()
 green_tree, pink_tree = pygame.transform.scale(green_tree,(120,189)), pygame.transform.scale(pink_tree,(120,189))
 green_rock, pink_rock = load_image('green_rock').convert(), load_image('pink_rock').convert()
 green_rock, pink_rock  = pygame.transform.scale(green_rock,(80,80)), pygame.transform.scale(pink_rock,(80,80))
+broken_tv = load_image('tv',True).convert()
+broken_tv = pygame.transform.scale(broken_tv,(80,90))
 found_tiles = False
 found_tiles_ypos = False
 bv = 50
@@ -218,6 +228,7 @@ while True:
     blocks = []
     trees = []
     rocks = []
+    active_tvs = []
     char_center = (char_x - game_scroll[0] + 40,char_y - game_scroll[1] + 45)
     character_hitbox = pygame.Rect(char_x - game_scroll[0] + 10, char_y - game_scroll[1] + 10, 70, 90)
     character_feet_hitbox = pygame.Rect(char_x - game_scroll[0] + 10, char_y - game_scroll[1] + 80, 70, 20)
@@ -258,6 +269,8 @@ while True:
                 char_prev_ypos = char_y
                 char_jump = True
                 char_acceleration = 20
+            if event.key == pygame.K_r and not char_alive:
+                level_retry = True
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_w:
                 char_up = False
@@ -284,7 +297,7 @@ while True:
     for y, tile_row in enumerate(current_map):
         found_e_tile = False
         for x,tile in enumerate(tile_row):
-            if tile != "0" and tile != "4":  # append the ground tile
+            if tile != "0" and tile != "4" and tile != "5":  # append the ground tile
                 block_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0], (10 + x * bv + y * bv) - game_scroll[1], 101, 101)
                 green_block_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0], (10 + x * bv + y * bv) - game_scroll[1],green_block.get_width(),green_block.get_height())
                 blocks.append([block_rect,green_block_rect])
@@ -300,6 +313,12 @@ while True:
                     rocks.append([rock_rect,rock_hitbox])
                 else:
                     rocks.append(None)
+                if tile == "6":
+                    tv_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0] + 10, (10 + x * bv + y * bv) - game_scroll[1] + 5, broken_tv.get_width(),broken_tv.get_height())
+                    tv_hitbox = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0] + 10, (10 + x * bv + y * bv) - game_scroll[1] + 25, broken_tv.get_width(),broken_tv.get_height() // 2)
+                    tv_object = tv_obj.copy()
+                    tv_object[1], tv_object[2] = tv_rect, tv_hitbox
+                    active_tvs.append(tv_object)
                 if tile == "e":  # check for enemy tile
                     if not first_etf:  # only execute once
                         pfet = y
@@ -323,6 +342,12 @@ while True:
                 blocks.append([block_rect, bridge_rect])
                 trees.append(None)
                 rocks.append(None)
+            elif tile == "5":
+                block_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0],(10 + x * bv + y * bv) - game_scroll[1], 101, 101)
+                bridge_rev_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0],(10 + x * bv + y * bv) - game_scroll[1], bridge_reverse.get_width(),bridge_reverse.get_height())
+                blocks.append([block_rect, bridge_rev_rect, 'r'])
+                trees.append(None)
+                rocks.append(None)
 
     # create the list of enemies
     if len(active_enemies) == 0:
@@ -332,6 +357,11 @@ while True:
     # save original number of enemies
     if not found_enemies:
         number_of_enemies = len(active_enemies)
+
+    # save number of tvs
+    if not found_tvs:
+        number_of_tvs = len(active_tvs)
+        found_tvs = True
 
     # create a list ONCE containing boolean values for each tile
     if not found_tiles:
@@ -350,8 +380,10 @@ while True:
         if tile_render_states[num]:
             if block_info[1].h == 170:
                 screen.blit(active_block, block_info[0])
-            elif block_info[1].h == 169:
+            elif block_info[1].h == 169 and 'r' not in block_info:
                 screen.blit(bridge, block_info[0])
+            else:
+                screen.blit(bridge_reverse, block_info[0])
             if trees[num] is not None:
                 screen.blit(active_tree,trees[num][0])
                 # pygame.draw.rect(screen,(0,0,255),trees[num][1],5)
@@ -382,7 +414,7 @@ while True:
         enemy[5] = enemy_hitbox
 
         if char_loaded:
-            if enemy_hitbox.colliderect(character_feet_shadow) and enemy[9] >= 255:
+            if enemy_hitbox.colliderect(character_feet_hitbox) and enemy[9] >= 255:
                 char_alive = False
 
         if enemy[7]:
@@ -453,37 +485,15 @@ while True:
             number_of_enemies -= 1  # subtract one from enemy counter
             enemy[7] = False  # don't show hp bar
 
-    print(number_of_enemies)
+    for tv in active_tvs:
+        screen.blit(broken_tv,(tv[1][0], tv[1][1]))
+        pygame.draw.rect(screen,(255,0,0),tv[2],1)
+
+        if tv[2].colliderect(character_feet_hitbox):
+            char_alive = False 
 
     # making glitch effect for spell casting ----------------------------------------------#
     if spell_cast[0]:
-        # glitch_bg_sl = pygame.Surface((600, 600))
-        # glitch_bg_fl = pygame.Surface((600, 600))
-        # glitch_bg = pygame.Surface((600, 600))
-        # glitch_bg.fill((10, 7, 44))
-        # glitch_bg.set_alpha(50)
-        # glitch_bg_fl.set_colorkey((0, 0, 0))
-        # frame_bg = spell_bg.copy()
-        #
-        # for _ in range(bn):
-        #     colour = random.choice(glitch_colours)
-        #     w, h = random.randint(300, 400), random.randint(75, 100)
-        #     x, y = random.randint(-50, 550), random.randint(0, 550)
-        #     pygame.draw.rect(glitch_bg_sl, colour, (x, y, w, h), 0)
-        #
-        # glitch_bg_sl.set_alpha(100)
-        #
-        # for _ in range(sn):
-        #     colour = random.choice(glitch_colours)
-        #     w, h = random.randint(100, 220), random.randint(4, 7)
-        #     x, y = random.randint(-50, 550), random.randint(0, 550)
-        #     pygame.draw.rect(glitch_bg_fl, colour, (x, y, w, h), 0)
-        #
-        # glitch_bg = pygame.transform.scale(glitch_bg, (gsl, gsl))
-        # glitch_bg_sl = pygame.transform.scale(glitch_bg_sl, (gsl, gsl))
-        # glitch_bg_fl = pygame.transform.scale(glitch_bg_fl, (gsl, gsl))
-        # frame_bg = pygame.transform.scale(frame_bg, (int(gsl * 1.5), int(gsl * 1.5)))
-
         glitch_bg, glitch_bg_sl, glitch_bg_fl, frame_bg = e.create_glitch_effect(gsl,frame=spell_bg.copy())
 
         screen.blit(glitch_bg,(spell_cast[1][0] - glitch_bg.get_width() // 2, spell_cast[1][1] - glitch_bg.get_height() // 2))
@@ -580,10 +590,8 @@ while True:
         char_y += char_acceleration
         char_acceleration += 1
 
-    if char_acceleration >= 100:  # if player falls off the map, quit program (later implement life system)
-        char_x, char_y = char_spawn
-        char_acceleration = 0
-        game_scroll = [0,0]
+    if char_acceleration >= 30:  # if player falls off the map, quit program (later implement life system)
+        char_alive = False
 
     # spell casting code ------------------------------------------------------------------------#
     if mb[0]:
@@ -651,7 +659,6 @@ while True:
             csf_center = (spell_cast[4][2][0] - csf_surf.get_width()//2, spell_cast[4][2][1] - csf_surf.get_height() + 50)
             csf_hitbox = pygame.Rect(csf_center[0], csf_center[1] + 350, csf_surf.get_width(), csf_surf.get_height()-400)
         screen.blit(csf_surf, csf_center)
-        pygame.draw.rect(screen,(0,255,0),csf_hitbox,1)
         spell_cast[4][1] += 1
         if spell_cast[4][1] >= len(animations_dictionary[spell_cast[4][0]]):
             spell_cast[4] = ['', 0, [0, 0]]
@@ -699,7 +706,6 @@ while True:
     else:
         char_frame_to_display = animations_dictionary['death'][char_current_frame]
 
-
     screen.blit(pygame.transform.flip(char_scythe,char_animation_flip, False), (char_x - game_scroll[0] - 15,char_y - game_scroll[1] - 50))
     screen.blit(pygame.transform.flip(char_frame_to_display,char_animation_flip,False),(char_x - game_scroll[0],char_y - game_scroll[1]))  # flip to make the character face the right way
     char_loaded = True
@@ -725,9 +731,10 @@ while True:
         screen.blit(animations_dictionary['screen_glitch'][char_current_frame % 3],(0,0))
         screen.blit(backdrop,(0,0))
         screen.blit(game_over_txt, game_over_rect)
+        screen.blit(game_over_txt_2,game_over_rect_2)
 
     # detect if level has been finished
-    if number_of_enemies == 0:
+    if number_of_enemies == 0 or level_retry:
         level_transition.set_alpha(level_transition_alpha)
         screen.blit(level_transition,(0,0))
 
@@ -739,30 +746,61 @@ while True:
                 level_transition_alpha -= 50
             level_timer += 1
 
-        if level_transition_alpha > 150:
-            active_bg_col,active_bg_col2 = (175, 216, 222), (220, 239, 242)
-            active_block,active_tree,active_rock = clean_block,clean_tree,clean_rock
+        if not level_retry:
+            if level_transition_alpha > 150:
+                active_bg_col,active_bg_col2 = (175, 216, 222), (220, 239, 242)
+                active_block,active_tree,active_rock = clean_block,clean_tree,clean_rock
 
-        if level_timer >= 300:  # wait approx 5 seconds before transitioning to new level
-            level_transition_alpha += 30
-            if level_transition_alpha >= 255:
+            if level_timer >= 300:  # wait approx 5 seconds before transitioning to new level
+                level_transition_alpha += 30
+                if level_transition_alpha >= 255:
+                    # reset variables
+                    current_level += 1
+                    current_map = load_map(current_level)
+                    game_scroll = [0, 0]
+                    char_x, char_y = (100, 100)
+                    char_alive = True
+                    char_current_animation, char_current_frame, char_animation_lock = 'idle', 0, False
+                    char_acceleration = 0
+                    char_jump, char_fall = False, False
+                    save_screen = None
+                    animations_dictionary['screen_glitch'], animations_dictionary['death'] = '', ''
+                    level_transition_alpha = 0
+                    level_timer = 0
+                    level_fade = False
+                    active_enemies = []
+                    found_enemies, tile_render_states = False, []
+                    level_retry = False
+                    found_tiles = False
+                    char_mana = 255
+                    level_retry = False
+                    if current_level % 2 == 0:
+                        active_block, active_tree, active_rock = pink_block, pink_tree, pink_rock
+                        active_bg_col, active_bg_col2 = (166, 27, 38), (102, 18, 25)
+                    else:
+                        active_block, active_tree, active_rock = green_block, green_tree, green_rock
+                        active_bg_col, active_bg_col2 = (45, 53, 61), (82, 96, 110)
+        else:
+            if level_timer >= 1:
                 # reset variables
-                current_level += 1
                 current_map = load_map(current_level)
-                game_scroll = [0,0]
-                char_x, char_y = (100,100)
+                found_tiles = False
+                game_scroll = [0, 0]
+                char_x, char_y = (100, 100)
+                char_alive = True
+                char_current_animation, char_current_frame, char_animation_lock = 'idle', 0, False
+                char_acceleration = 0
+                char_jump, char_fall = False, False
+                save_screen = None
+                animations_dictionary['screen_glitch'], animations_dictionary['death'] = '', ''
                 level_transition_alpha = 0
                 level_timer = 0
                 level_fade = False
                 active_enemies = []
                 found_enemies = False
+                found_tiles = False
+                level_retry = False
                 char_mana = 255
-                if current_level % 2 == 0:
-                    active_block, active_tree, active_rock = pink_block, pink_tree, pink_rock
-                    active_bg_col, active_bg_col2 = (166, 27, 38), (102, 18, 25)
-                else:
-                    active_block, active_tree, active_rock = green_block, green_tree, green_rock
-                    active_bg_col, active_bg_col2 = (45, 53, 61), (82, 96, 110)
 
     pygame.display.flip()
     clock.tick(FPS)

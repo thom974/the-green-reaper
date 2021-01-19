@@ -1,5 +1,7 @@
 import math
 import pygame
+pygame.init()
+screen = pygame.display.set_mode((300,300))
 
 
 def check_rect_distance(pos_one,rectangle_pos, distance):
@@ -32,3 +34,45 @@ def check_collision(player_hitbox,obj_hitbox):
             return [False,False,False,True]
     else:
         return [False,False,False,False]
+
+
+def create_bullet(center,radians):
+    bullets = [[center,[0,0],0] for _ in range(4)]  # create the 4 bullets // location, x + y velocity, speed
+    pi_2 = math.pi / 2
+
+    for i in range(4):
+        dx = math.cos(radians+i*pi_2) / 50
+        dy = math.sin(radians+i*pi_2) / 50
+        bullets[i][1][0] = dx
+        bullets[i][1][1] = dy
+
+    return bullets
+
+
+fc = 0
+tv = [[150,100],[]]  # tv[1] = bullet list
+tv[1] = create_bullet([150,150],45)
+tv[1][0][0][0] = 160
+print(tv[1][0])
+print(tv[1][1])
+print(tv[1])
+# while True:
+#     screen.fill((128,128,128))
+#     for event in pygame.event.get():
+#         if event.type == pygame.QUIT:
+#             pygame.quit()
+#
+#     tv[1][0][0][0] += tv[1][0][1][0]
+#     tv[1][0][0][1] -= tv[1][0][1][1]
+#
+#     # print("before",tv[1][0])
+#
+#     tv[1][1][0][0] += tv[1][1][1][0]
+#     tv[1][1][0][1] -= tv[1][1][1][1]
+#
+#     # print("after",tv[1][0])
+#
+#     pygame.draw.circle(screen,(255,0,0),tv[1][0][0],7,0)
+#     # pygame.draw.circle(screen,(255,0,0),tv[1][1][0],7,0)
+#
+#     pygame.display.flip()

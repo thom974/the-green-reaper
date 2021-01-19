@@ -69,18 +69,24 @@ def create_font(font_size):
     return pygame.font.Font('data/Silver.ttf', font_size)
 
 
-def create_bg(vals):
+def create_bg(vals,col):
     w,x,y,z = vals
     poly_points1 = [(0,150+x),(900,0+x),(900,100+x),(0,250+x)]
     poly_points2 = [(0,350+y),(900,200+y),(900,300+y),(0,450+y)]
     poly_points3 = [(0,550+z),(900,400+z),(900,500+z),(0,650+z)]
     poly_points4 = [(0,750+w),(900,600+w),(900,700+w),(0,850+w)]
 
-    pygame.draw.polygon(screen,(82, 96, 110),poly_points1,0)
-    pygame.draw.polygon(screen,(82, 96, 110),poly_points2,0)
-    pygame.draw.polygon(screen,(82, 96, 110),poly_points3,0)
-    pygame.draw.polygon(screen,(82, 96, 110),poly_points4,0)
+    pygame.draw.polygon(screen,col,poly_points1,0)
+    pygame.draw.polygon(screen,col,poly_points2,0)
+    pygame.draw.polygon(screen,col,poly_points3,0)
+    pygame.draw.polygon(screen,col,poly_points4,0)
 
+
+def load_map(map_num):
+    map_name = 'map' + str(map_num)
+    f = open('data/maps/' + map_name + '.txt', 'r')
+    map_data = [[tile for tile in tile_row.rstrip("\n")] for tile_row in f]
+    return map_data
 
 # creating game over screen
 backdrop = pygame.Surface((900,600))
@@ -94,6 +100,7 @@ level_transition = pygame.Surface((900,600))
 level_transition.fill((255,255,255))
 level_transition_alpha = 0
 level_fade = False
+level_timer = 0
 
 game_border = load_image('border',True).convert()
 game_border = pygame.transform.scale(game_border,(900,600))
@@ -116,8 +123,9 @@ mana_bar = load_image('mana_bar',True).convert()
 mana_bar = pygame.transform.scale(mana_bar,(300,60))
 
 # enemies
-slime1,slime2,slime3 = ['slime',[0,0],0,[],'right',None,'move',False,2,255],['slime',[0,0],0,[],'right',None,'move',False,2,255],['slime',[0,0],0,[],'right',None,'move',False,2,255]
-active_enemies = [slime1,slime2,slime3]
+slime_obj = ['slime',[0,0],0,[],'right',None,'move',False,2,255]
+# slime1,slime2,slime3 = ['slime',[0,0],0,[],'right',None,'move',False,2,255],['slime',[0,0],0,[],'right',None,'move',False,2,255],['slime',[0,0],0,[],'right',None,'move',False,2,255]
+active_enemies = []
 hp_bar = load_image('health_bar',True).convert()
 hp_bar = pygame.transform.scale(hp_bar,(55,15))
 
@@ -128,6 +136,9 @@ char_animation_flip = False  # flip the frame depending on direction moving
 char_animation_lock = False
 
 # level variables
+current_level = 1
+current_map = load_map(current_level)
+bg_values = [-150,-150,-150,-150]
 game_scroll = [0,0]
 number_of_enemies = 0
 found_enemies = False
@@ -145,6 +156,8 @@ green_rock = pygame.transform.scale(green_rock,(80,80))
 found_tiles = False
 found_tiles_ypos = False
 bv = 50
+active_block, active_tree, active_rock = green_block, green_tree, green_rock
+active_bg_col, active_bg_col2 = (45, 53, 61), (82, 96, 110)
 
 clean_block = load_image('ground_clean').convert()
 clean_block = pygame.transform.scale(clean_block,(101,170))
@@ -200,10 +213,6 @@ bn = 30
 sn = 100
 gsl = 0
 
-f = open('data/maps/map_one.txt','r')
-map_one_data = [[tile for tile in tile_row.rstrip("\n")] for tile_row in f]
-osu_font = pygame.font.Font('data/Aller_Bd.ttf', 30)
-bg_values = [-150,-150,-150,-150]
 # main loop -----------------------------------------------------#
 while True:
     # some variables
@@ -215,18 +224,12 @@ while True:
     character_feet_hitbox = pygame.Rect(char_x - game_scroll[0] + 10, char_y - game_scroll[1] + 80, 70, 20)
 
     # background
-    screen.fill((45, 53, 61))
-    create_bg(bg_values)
+    screen.fill(active_bg_col)
+    create_bg(bg_values,active_bg_col2)
 
     # control game scroll
     game_scroll[0] += (char_x - game_scroll[0] - 450 + 37) / 40
     game_scroll[1] += (char_y - game_scroll[1] - 300 + 50) / 40
-
-    # to display mouse coordinates
-    mx, my = pygame.mouse.get_pos()
-    text = osu_font.render(str(mx) + ", " + str(my), True, (0, 0, 0))
-    text_rect = text.get_rect()
-    text_rect.center = (800, 40)
 
     # # test spell casting
     # current_spell_frame = animations_dictionary['slime'][spell_cast[4][1]]
@@ -279,7 +282,7 @@ while True:
     enemy_tiles = [[]]
     first_etf = False
     pfet = 0
-    for y, tile_row in enumerate(map_one_data):
+    for y, tile_row in enumerate(current_map):
         found_e_tile = False
         for x,tile in enumerate(tile_row):
             if tile != "0" and tile != "4":  # append the ground tile
@@ -322,6 +325,11 @@ while True:
                 trees.append(None)
                 rocks.append(None)
 
+    # create the list of enemies
+    if len(active_enemies) == 0:
+        for _ in enemy_tiles:
+            active_enemies.append(slime_obj.copy())
+
     # save original number of enemies
     if not found_enemies:
         number_of_enemies = len(active_enemies)
@@ -342,15 +350,16 @@ while True:
 
         if tile_render_states[num]:
             if block_info[1].h == 170:
-                screen.blit(clean_block, block_info[0])
+                screen.blit(active_block, block_info[0])
             elif block_info[1].h == 169:
                 screen.blit(bridge, block_info[0])
             if trees[num] is not None:
-                screen.blit(clean_tree,trees[num][0])
+                screen.blit(active_tree,trees[num][0])
                 # pygame.draw.rect(screen,(0,0,255),trees[num][1],5)
             if rocks[num] is not None:
-                screen.blit(clean_rock,rocks[num][0])
+                screen.blit(active_rock,rocks[num][0])
                 # pygame.draw.rect(screen,(0,0,255),rocks[num][1],5)
+
 
     for j, area in enumerate(enemy_tiles):
         for i, e_tile in enumerate(area):
@@ -445,6 +454,8 @@ while True:
         if enemy[9] <= 0:
             number_of_enemies -= 1  # subtract one from enemy counter
             enemy[7] = False  # don't show hp bar
+
+    print(number_of_enemies)
 
     # making glitch effect for spell casting ----------------------------------------------#
     if spell_cast[0]:
@@ -721,11 +732,32 @@ while True:
     if number_of_enemies == 0:
         level_transition.set_alpha(level_transition_alpha)
         screen.blit(level_transition,(0,0))
+
         if level_transition_alpha < 400 and not level_fade:
             level_transition_alpha += 10
         else:
             level_fade = True
-            level_transition_alpha -= 100
+            if level_timer <= 6:
+                level_transition_alpha -= 50
+            level_timer += 1
+
+        if level_transition_alpha > 150:
+            active_bg_col,active_bg_col2 = (175, 216, 222), (220, 239, 242)
+            active_block,active_tree,active_rock = clean_block,clean_tree,clean_rock
+
+        if level_timer >= 300:  # wait approx 5 seconds before transitioning to new level
+            level_transition_alpha += 30
+            if level_transition_alpha >= 255:
+                # reset variables
+                current_level += 1
+                current_map = load_map(current_level)
+                game_scroll = [0,0]
+                char_x, char_y = (100,100)
+                level_transition_alpha = 0
+                level_timer = 0
+                level_fade = False
+                active_enemies = []
+                found_enemies = False
 
     pygame.display.flip()
     clock.tick(FPS)

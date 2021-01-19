@@ -30,7 +30,6 @@ def load_image(filename,*args):
         surface.set_colorkey((0,0,0))  # remove black background
     return surface
 
-
 animation_frame_surfaces = {}  # holds all the frames' surfaces
 animations_dictionary = {}  # holds a list for every animation type, the keys being the name of each animation
 
@@ -147,12 +146,12 @@ save_screen = None
 # level tiles
 bridge = load_image('bridge').convert()
 bridge = pygame.transform.scale(bridge,(101,169))
-green_block = load_image('ground_green').convert()
-green_block = pygame.transform.scale(green_block,(101,170))
-green_tree = load_image('green_tree').convert()
-green_tree = pygame.transform.scale(green_tree,(120,189))
-green_rock = load_image('green_rock').convert()
-green_rock = pygame.transform.scale(green_rock,(80,80))
+green_block, pink_block = load_image('ground_green').convert(), load_image('ground_pink').convert()
+green_block, pink_block = pygame.transform.scale(green_block,(101,170)), pygame.transform.scale(pink_block,(101,170))
+green_tree, pink_tree = load_image('green_tree').convert(), load_image('pink_tree').convert()
+green_tree, pink_tree = pygame.transform.scale(green_tree,(120,189)), pygame.transform.scale(pink_tree,(120,189))
+green_rock, pink_rock = load_image('green_rock').convert(), load_image('pink_rock').convert()
+green_rock, pink_rock  = pygame.transform.scale(green_rock,(80,80)), pygame.transform.scale(pink_rock,(80,80))
 found_tiles = False
 found_tiles_ypos = False
 bv = 50
@@ -341,7 +340,7 @@ while True:
 
     for num, block_info in enumerate(blocks):
         block_center = (block_info[1].x + block_info[1].w // 2, block_info[1].y + block_info[1].h // 2)
-        if m.check_rect_distance(char_center,block_center,400):
+        if m.check_rect_distance(char_center,block_center,500):
             # pygame.draw.line(screen, (0, 255, 0), char_center,(block_info[1].x + block_info[1].w // 2, block_info[1].y + block_info[1].h // 2))
             tile_render_states[num] = True
         else:
@@ -359,7 +358,6 @@ while True:
             if rocks[num] is not None:
                 screen.blit(active_rock,rocks[num][0])
                 # pygame.draw.rect(screen,(0,0,255),rocks[num][1],5)
-
 
     for j, area in enumerate(enemy_tiles):
         for i, e_tile in enumerate(area):
@@ -758,6 +756,13 @@ while True:
                 level_fade = False
                 active_enemies = []
                 found_enemies = False
+                char_mana = 255
+                if current_level % 2 == 0:
+                    active_block, active_tree, active_rock = pink_block, pink_tree, pink_rock
+                    active_bg_col, active_bg_col2 = (166, 27, 38), (102, 18, 25)
+                else:
+                    active_block, active_tree, active_rock = green_block, green_tree, green_rock
+                    active_bg_col, active_bg_col2 = (45, 53, 61), (82, 96, 110)
 
     pygame.display.flip()
     clock.tick(FPS)

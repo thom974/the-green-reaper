@@ -56,7 +56,7 @@ def create_bullet(center,radians):
 
     return bullets
 
-
+#
 # fc = 0
 # tv = [[150,100],[],45]  # tv location, bullets, angle
 #

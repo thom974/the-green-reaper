@@ -126,14 +126,6 @@ animations_dictionary['screen_glitch'] = ''
 mana_bar = load_image('mana_bar',True).convert()
 mana_bar = pygame.transform.scale(mana_bar,(300,60))
 
-# enemies
-slime_obj = ['slime',[0,0],0,[],'right',None,'move',False,2,255]  # name, location, current frame, enemy tiles, direction, hp_bar, animation, display hp_bar, hp, alpha
-tv_obj = ['tv',[],None,[],0]  # name, location, hitbox, bullet list, bullet angle
-active_enemies = []
-active_tvs = []
-hp_bar = load_image('health_bar',True).convert()
-hp_bar = pygame.transform.scale(hp_bar,(55,15))
-
 # char animation variables
 char_current_animation = 'idle'  # create variable to hold character's current animation
 char_current_frame = 0
@@ -141,7 +133,7 @@ char_animation_flip = False  # flip the frame depending on direction moving
 char_animation_lock = False
 
 # level variables
-current_level = 4
+current_level = 3
 current_map = load_map(current_level)
 bg_values = [-150,-150,-150,-150]
 game_scroll = [0,0]
@@ -164,7 +156,7 @@ green_rock, pink_rock  = pygame.transform.scale(green_rock,(80,80)), pygame.tran
 broken_tv = load_image('tv',True).convert()
 broken_tv = pygame.transform.scale(broken_tv,(80,90))
 bullet = load_image('bullet',True).convert()
-bullet = pygame.transform.scale(bullet,(15,15))
+bullet = pygame.transform.scale(bullet,(25,25))
 found_tiles = False
 found_tiles_ypos = False
 bv = 50
@@ -178,6 +170,16 @@ clean_tree = pygame.transform.scale(clean_tree,(120,189))
 clean_rock = load_image('clean_rock').convert()
 clean_rock = pygame.transform.scale(clean_rock,(80,80))
 
+# enemies
+slime_obj = ['slime',[0,0],0,[],'right',None,'move',False,2,255]  # name, location, current frame, enemy tiles, direction, hp_bar, animation, display hp_bar, hp, alpha
+tv_obj = [broken_tv,[],None,[],0,True, 255]  # frame, location, hitbox, bullet list, bullet angle, show on screen bool, alpha
+active_enemies = []
+active_tvs = []
+tv_angle = 0
+hp_bar = load_image('health_bar',True).convert()
+hp_bar = pygame.transform.scale(hp_bar,(55,15))
+
+# character variables
 char_spawn = [100,0]
 char_x, char_y = (100,100)
 char_speed = 3
@@ -193,7 +195,6 @@ char_mana = 255
 char_alive = True
 char_loaded = False
 
-# char_scythe = pygame.image.load('data/images/scythe.png').convert()
 char_scythe = load_image('scythe',True).convert()
 char_scythe = pygame.transform.scale(char_scythe,(135,135))
 char_shadow = load_image('char_shadow',True).convert()
@@ -230,7 +231,6 @@ while True:
     blocks = []
     trees = []
     rocks = []
-    active_tvs = []
     char_center = (char_x - game_scroll[0] + 40,char_y - game_scroll[1] + 45)
     character_hitbox = pygame.Rect(char_x - game_scroll[0] + 10, char_y - game_scroll[1] + 10, 70, 90)
     character_feet_hitbox = pygame.Rect(char_x - game_scroll[0] + 10, char_y - game_scroll[1] + 80, 70, 20)
@@ -315,11 +315,11 @@ while True:
                     rocks.append([rock_rect,rock_hitbox])
                 else:
                     rocks.append(None)
-                if tile == "6":
+                if tile == "6" and not found_tvs:
                     tv_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0] + 10, (10 + x * bv + y * bv) - game_scroll[1] + 5, broken_tv.get_width(),broken_tv.get_height())
                     tv_hitbox = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0] + 10, (10 + x * bv + y * bv) - game_scroll[1] + 25, broken_tv.get_width(),broken_tv.get_height() // 2)
                     tv_object = tv_obj.copy()
-                    tv_object[1], tv_object[2] = tv_rect, tv_hitbox
+                    tv_object[1] = tv_rect
                     active_tvs.append(tv_object)
                 if tile == "e":  # check for enemy tile
                     if not first_etf:  # only execute once
@@ -356,14 +356,14 @@ while True:
         for _ in enemy_tiles:
             active_enemies.append(slime_obj.copy())
 
-    # save original number of enemies
-    if not found_enemies:
-        number_of_enemies = len(active_enemies)
-
     # save number of tvs
     if not found_tvs:
         number_of_tvs = len(active_tvs)
         found_tvs = True
+
+    # save original number of total enemies
+    if not found_enemies:
+        number_of_enemies = len(active_enemies) + len(active_tvs)
 
     # create a list ONCE containing boolean values for each tile
     if not found_tiles:
@@ -488,24 +488,40 @@ while True:
             enemy[7] = False  # don't show hp bar
 
     for tv in active_tvs:
-        print(tv)
-        screen.blit(broken_tv,(tv[1][0], tv[1][1]))
-        pygame.draw.rect(screen,(255,0,0),tv[2],1)
+        frame = tv[0].copy()
+        frame.set_alpha(tv[6])
+        tv[2] = pygame.Rect(tv[1][0] - game_scroll[0], tv[1][1] - game_scroll[1], broken_tv.get_width(), broken_tv.get_height())
+        screen.blit(frame,(tv[1][0] - game_scroll[0], tv[1][1] - game_scroll[1]))
+        # pygame.draw.rect(screen,(255,0,0),tv[2],1)
 
-        if tv[2].colliderect(character_feet_hitbox):
+        if tv[2].colliderect(character_feet_hitbox) and tv[5]:
             char_alive = False
 
-        if second_frame_count == 300:  # will execute every 1 second
-            tv[4] += 23
-            b_loc = [tv[2].x + tv[2].w//2, tv[2].y + tv[2].h//2]
+        if frame_count % 60 == 59 and tv[5]:  # will execute every 1 second
+            tv[4] += tv_angle
+            tv_angle += 45
+            b_loc = [tv[2].x + tv[2].w//2 + game_scroll[0], tv[2].y + tv[2].h//2 + game_scroll[1]]
             tv[3].extend(m.create_bullet(b_loc,tv[4]))
+            print(len(tv[3]))
+            if len(tv[3]) >= 30:
+                del tv[3][:5]
 
-        # pygame.draw.circle(screen,(255,0,0),b_loc,10,0
         if len(tv[3]) != 0:
             for b in tv[3]:
                 b[0][0] += b[1][0]
                 b[0][1] -= b[1][1]
+                b_hitbox = pygame.Rect(b[0][0] - bullet.get_width()//2 - game_scroll[0], b[0][1] - bullet.get_height()//2 - game_scroll[1], bullet.get_width(), bullet.get_height())
                 screen.blit(bullet,(b[0][0] - bullet.get_width()//2 - game_scroll[0], b[0][1] - bullet.get_height()//2 - game_scroll[1]))
+                # pygame.draw.rect(screen,(255,0,0),b_hitbox,1)
+                # if b_hitbox.colliderect(character_hitbox):
+                #     char_alive = False
+
+        if not tv[5]:  # start decreasing its alpha if hit by spell
+            tv[6] -= 40
+
+        if tv[6] <= 0:
+            tv[6] = 0
+            number_of_enemies -= 1
 
     # making glitch effect for spell casting ----------------------------------------------#
     if spell_cast[0]:
@@ -689,6 +705,10 @@ while True:
                 elif spell_cast[4][0] == 'thunder':
                     enemy[8] -= 2
 
+        for tv in active_tvs:
+            if tv[2].colliderect(csf_hitbox) and spell_cast[4][1] == 1:
+                tv[5] = False  # if tv[5] is False, the tv's alpha will start decreasing
+
     # character graphics code ------------------------------------------------------------------------#
     # pygame.draw.rect(screen,(255,0,0),character_hitbox,1)
     # pygame.draw.rect(screen,(0,255,0),character_feet_hitbox,1)
@@ -788,6 +808,8 @@ while True:
                     level_timer = 0
                     level_fade = False
                     active_enemies = []
+                    active_tvs = []
+                    found_tvs = False
                     found_enemies, tile_render_states = False, []
                     level_retry = False
                     found_tiles = False
@@ -816,6 +838,8 @@ while True:
                 level_timer = 0
                 level_fade = False
                 active_enemies = []
+                active_tvs = []
+                found_tvs = False
                 found_enemies = False
                 found_tiles = False
                 level_retry = False

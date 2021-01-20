@@ -1,7 +1,14 @@
 import math
 import pygame
-pygame.init()
-screen = pygame.display.set_mode((300,300))
+# pygame.init()
+# screen = pygame.display.set_mode((300,300))
+# clock = pygame.time.Clock()
+# bullet = pygame.image.load('bullet.png').convert()
+# bullet.set_colorkey((255,255,255))
+# bullet = pygame.transform.scale(bullet,(15,15))
+# broken_tv = pygame.image.load('tv.png').convert()
+# broken_tv.set_colorkey((255,255,255))
+# broken_tv = pygame.transform.scale(broken_tv,(90,80))
 
 
 def check_rect_distance(pos_one,rectangle_pos, distance):
@@ -37,42 +44,41 @@ def check_collision(player_hitbox,obj_hitbox):
 
 
 def create_bullet(center,radians):
-    bullets = [[center,[0,0],0] for _ in range(4)]  # create the 4 bullets // location, x + y velocity, speed
+    x, y = center
+    bullets = [[[x,y],[0,0],0] for _ in range(4)]  # create the 4 bullets // location, x + y velocity, speed
     pi_2 = math.pi / 2
 
     for i in range(4):
-        dx = math.cos(radians+i*pi_2) / 50
-        dy = math.sin(radians+i*pi_2) / 50
+        dx = math.cos(radians+i*pi_2)
+        dy = math.sin(radians+i*pi_2)
         bullets[i][1][0] = dx
         bullets[i][1][1] = dy
 
     return bullets
 
 
-fc = 0
-tv = [[150,100],[]]  # tv[1] = bullet list
-tv[1] = create_bullet([150,150],45)
-tv[1][0][0][0] = 160
-print(tv[1][0])
-print(tv[1][1])
-print(tv[1])
+# fc = 0
+# tv = [[150,100],[],45]  # tv location, bullets, angle
+#
 # while True:
-#     screen.fill((128,128,128))
+#     screen.fill((255,255,255))
 #     for event in pygame.event.get():
 #         if event.type == pygame.QUIT:
 #             pygame.quit()
 #
-#     tv[1][0][0][0] += tv[1][0][1][0]
-#     tv[1][0][0][1] -= tv[1][0][1][1]
+#     if fc % 60 == 0:
+#         tv[2] += 23
+#         tv[1].extend(create_bullet([150,150],tv[2]))
 #
-#     # print("before",tv[1][0])
+#     remove_bullets = []
+#     for b in tv[1]:
+#         b[0][0] += b[1][0]
+#         b[0][1] -= b[1][1]
+#         pygame.draw.circle(screen,(255,0,0),b[0],5,0)
+#         screen.blit(bullet,(b[0][0] - bullet.get_width()//2, b[0][1] - bullet.get_height()//2))
 #
-#     tv[1][1][0][0] += tv[1][1][1][0]
-#     tv[1][1][0][1] -= tv[1][1][1][1]
+#     screen.blit(broken_tv,(150 - broken_tv.get_width()//2, 150 - broken_tv.get_height()//2))
 #
-#     # print("after",tv[1][0])
-#
-#     pygame.draw.circle(screen,(255,0,0),tv[1][0][0],7,0)
-#     # pygame.draw.circle(screen,(255,0,0),tv[1][1][0],7,0)
-#
+#     fc += 1
+#     clock.tick(60)
 #     pygame.display.flip()

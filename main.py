@@ -19,6 +19,7 @@ clock = pygame.time.Clock()
 # pygame.mouse.set_visible(False)
 FPS = 60
 frame_count = 0
+second_frame_count = 0
 # helpful functions and code---------------------------------------------#
 
 
@@ -127,7 +128,7 @@ mana_bar = pygame.transform.scale(mana_bar,(300,60))
 
 # enemies
 slime_obj = ['slime',[0,0],0,[],'right',None,'move',False,2,255]  # name, location, current frame, enemy tiles, direction, hp_bar, animation, display hp_bar, hp, alpha
-tv_obj = ['tv',[],None]  # name, location, hitbox
+tv_obj = ['tv',[],None,[],0]  # name, location, hitbox, bullet list, bullet angle
 active_enemies = []
 active_tvs = []
 hp_bar = load_image('health_bar',True).convert()
@@ -162,6 +163,8 @@ green_rock, pink_rock = load_image('green_rock').convert(), load_image('pink_roc
 green_rock, pink_rock  = pygame.transform.scale(green_rock,(80,80)), pygame.transform.scale(pink_rock,(80,80))
 broken_tv = load_image('tv',True).convert()
 broken_tv = pygame.transform.scale(broken_tv,(80,90))
+bullet = load_image('bullet',True).convert()
+bullet = pygame.transform.scale(bullet,(15,15))
 found_tiles = False
 found_tiles_ypos = False
 bv = 50
@@ -208,8 +211,7 @@ grid_points = []
 grid_max = False
 active_point = 4
 
-spells_dictionary = {
-    'fireball': [[3, 0, 1, 2, 5, 8, 7, 6],200],  # spell pattern, cost
+spells_dictionary = {                # spell pattern, cost
     'slash': [[2, 1, 0, 3, 6],50],
     'thunder': [[1, 3, 4, 5, 7],100]
 }
@@ -486,11 +488,24 @@ while True:
             enemy[7] = False  # don't show hp bar
 
     for tv in active_tvs:
+        print(tv)
         screen.blit(broken_tv,(tv[1][0], tv[1][1]))
         pygame.draw.rect(screen,(255,0,0),tv[2],1)
 
         if tv[2].colliderect(character_feet_hitbox):
-            char_alive = False 
+            char_alive = False
+
+        if second_frame_count == 300:  # will execute every 1 second
+            tv[4] += 23
+            b_loc = [tv[2].x + tv[2].w//2, tv[2].y + tv[2].h//2]
+            tv[3].extend(m.create_bullet(b_loc,tv[4]))
+
+        # pygame.draw.circle(screen,(255,0,0),b_loc,10,0
+        if len(tv[3]) != 0:
+            for b in tv[3]:
+                b[0][0] += b[1][0]
+                b[0][1] -= b[1][1]
+                screen.blit(bullet,(b[0][0] - bullet.get_width()//2 - game_scroll[0], b[0][1] - bullet.get_height()//2 - game_scroll[1]))
 
     # making glitch effect for spell casting ----------------------------------------------#
     if spell_cast[0]:
@@ -725,6 +740,10 @@ while True:
     frame_count += 1
     if frame_count > 60:
         frame_count = 0
+
+    second_frame_count += 1
+    if second_frame_count > 300:
+        second_frame_count = 0
 
     if animations_dictionary['screen_glitch'] != '':
         screen.blit(save_screen,(0,0))

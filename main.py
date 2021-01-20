@@ -182,7 +182,7 @@ hp_bar = pygame.transform.scale(hp_bar,(55,15))
 # character variables
 char_spawn = [100,0]
 char_x, char_y = (100,100)
-char_speed = 3
+char_speed = 10
 char_up = False
 char_down = False
 char_left = False
@@ -224,7 +224,7 @@ glitch_colours = [(16, 26, 86),(22, 45, 118),(36, 86, 196),(195, 20, 118),(51, 7
 bn = 30
 sn = 100
 gsl = 0
-
+test_var = False
 # main loop -----------------------------------------------------#
 while True:
     # some variables
@@ -487,7 +487,7 @@ while True:
             number_of_enemies -= 1  # subtract one from enemy counter
             enemy[7] = False  # don't show hp bar
 
-    for tv in active_tvs:
+    for tv_num,tv in enumerate(active_tvs):
         frame = tv[0].copy()
         frame.set_alpha(tv[6])
         tv[2] = pygame.Rect(tv[1][0] - game_scroll[0], tv[1][1] - game_scroll[1], broken_tv.get_width(), broken_tv.get_height())
@@ -497,14 +497,19 @@ while True:
         if tv[2].colliderect(character_feet_hitbox) and tv[5]:
             char_alive = False
 
-        if frame_count % 60 == 59 and tv[5]:  # will execute every 1 second
+        if frame_count == 59 and tv[5]:  # will execute every 1 second
+            if tv_num == 2:
+                test_var = True
             tv[4] += tv_angle
             tv_angle += 45
             b_loc = [tv[2].x + tv[2].w//2 + game_scroll[0], tv[2].y + tv[2].h//2 + game_scroll[1]]
+            # if tv_num != 0:
+            #     tv[3] = tv[3][:-tv_num*4]
             tv[3].extend(m.create_bullet(b_loc,tv[4]))
-            print(len(tv[3]))
             if len(tv[3]) >= 30:
                 del tv[3][:5]
+
+        print(len(tv[3]), tv_num, tv[3])
 
         if len(tv[3]) != 0:
             for b in tv[3]:
@@ -756,6 +761,9 @@ while True:
 
     if char_mana <= 255 and frame_count % 5 == 0:
         char_mana += 1
+
+    if frame_count == 60:
+        test_var = True
 
     frame_count += 1
     if frame_count > 60:

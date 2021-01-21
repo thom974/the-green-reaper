@@ -320,6 +320,7 @@ while True:
                     tv_hitbox = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0] + 10, (10 + x * bv + y * bv) - game_scroll[1] + 25, broken_tv.get_width(),broken_tv.get_height() // 2)
                     tv_object = tv_obj.copy()
                     tv_object[1] = tv_rect
+                    tv_object[3] = []
                     active_tvs.append(tv_object)
                 if tile == "e":  # check for enemy tile
                     if not first_etf:  # only execute once
@@ -508,8 +509,6 @@ while True:
             tv[3].extend(m.create_bullet(b_loc,tv[4]))
             if len(tv[3]) >= 30:
                 del tv[3][:5]
-
-        print(len(tv[3]), tv_num, tv[3])
 
         if len(tv[3]) != 0:
             for b in tv[3]:

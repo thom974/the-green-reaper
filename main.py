@@ -134,7 +134,10 @@ enemy_counter_bg.set_alpha((100))
 enemy_counter_font = create_font(55)
 level_header = load_image('level',True).convert()
 level_header = pygame.transform.scale(level_header,(288,80))
-level_font = create_font(40)
+level_font = create_font(50)
+scroll = load_image('scroll',True).convert()
+scroll = pygame.transform.scale(scroll,(600,728))
+scroll_font = create_font(40)
 
 # char animation variables
 char_current_animation = 'idle'  # create variable to hold character's current animation
@@ -143,7 +146,7 @@ char_animation_flip = False  # flip the frame depending on direction moving
 char_animation_lock = False
 
 # level variables
-current_level = 5
+current_level = 1
 current_map = load_map(current_level)
 bg_values = [-150,-150,-150,-150]
 game_scroll = [0,0]
@@ -152,6 +155,7 @@ found_enemies = False
 found_tvs = False
 save_screen = None
 level_retry = False
+scroll_obj = [[450 - scroll.get_width()//2,700],[], True]  # sc\roll location, scroll text, scroll active
 
 # level tiles
 bridge = load_image('bridge').convert()
@@ -789,23 +793,37 @@ while True:
     screen.blit(enemy_number_text,enemy_number_text_rect)
     screen.blit(enemy_counter,(659,120))
     screen.blit(level_header,(450 - level_header.get_width()//2,5))
-    current_level_text = level_font.render('LEVEL ' + str(current_level),True,(174,135,228))
+    if frame_count > 30:
+        current_level_text = level_font.render('ZONE ' + str(current_level),True,(255,255,255))
+        current_level_text2 = level_font.render('ZONE ' + str(current_level),True,(212, 212, 212))
+    else:
+        current_level_text = level_font.render('ZONE ' + str(current_level),True,(174,135,228))
+        current_level_text2 = level_font.render('ZONE ' + str(current_level), True, (221, 203, 245))
     current_level_text_rect = current_level_text.get_rect()
+    current_level_text_rect2 = current_level_text2.get_rect()
+    current_level_text_rect.center = (450,42)
+    current_level_text_rect2.center = (451,43)
+    screen.blit(current_level_text2, current_level_text_rect2)
+    screen.blit(current_level_text,current_level_text_rect)
 
+    # scroll system --------------------------------------------------------------------------------------------#
+    # add text to scroll depending on level
+    if current_level == 1:
+        scroll_text = 'Welcome to Earth! Hope you\'re having a blast. Last time I checked, it was looking kind of filthy there... so do me a favour, and clean it up will ya?'
+        scroll_surf = pygame.Surface(scroll.get_width()-75,scroll.get_width()-75)
+        scroll_rect = pygame.Rect(0,0, scroll_surf.get_width(), scroll_surf.get_height())
+        m.drawText(scroll_surf,scroll_text,(49, 52, 56),scroll_rect,scroll_font,aa=True)
 
+    if scroll_obj[2] and scroll_obj[0][1] >= 100:
+        scroll_obj[0][1] -= 5
+    elif not scroll_obj[2] and scroll_obj[0][1] <= 650:
+        scroll_obj[0][1] += 5
+
+    screen.blit(scroll,scroll_obj[0])
+
+    # increase character mana
     if char_mana <= 255 and frame_count % 5 == 0:
         char_mana += 1
-
-    if frame_count == 60:
-        test_var = True
-
-    frame_count += 1
-    if frame_count > 60:
-        frame_count = 0
-
-    second_frame_count += 1
-    if second_frame_count > 300:
-        second_frame_count = 0
 
     if animations_dictionary['screen_glitch'] != '':
         screen.blit(save_screen,(0,0))
@@ -886,6 +904,14 @@ while True:
                 found_tiles = False
                 level_retry = False
                 char_mana = 255
+
+    frame_count += 1
+    if frame_count > 60:
+        frame_count = 0
+
+    second_frame_count += 1
+    if second_frame_count > 300:
+        second_frame_count = 0
 
     pygame.display.flip()
     clock.tick(FPS)

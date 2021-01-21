@@ -1,3 +1,5 @@
+# Credits: pygame wiki for TextWrap function: https://www.pygame.org/wiki/TextWrap#:~:text=Simple%20Text%20Wrapping%20for%20pygame,make%20the%20line%20closer%20together.
+
 import math
 import pygame
 # pygame.init()
@@ -56,29 +58,41 @@ def create_bullet(center,radians):
 
     return bullets
 
-#
-# fc = 0
-# tv = [[150,100],[],45]  # tv location, bullets, angle
-#
-# while True:
-#     screen.fill((255,255,255))
-#     for event in pygame.event.get():
-#         if event.type == pygame.QUIT:
-#             pygame.quit()
-#
-#     if fc % 60 == 0:
-#         tv[2] += 23
-#         tv[1].extend(create_bullet([150,150],tv[2]))
-#
-#     remove_bullets = []
-#     for b in tv[1]:
-#         b[0][0] += b[1][0]
-#         b[0][1] -= b[1][1]
-#         pygame.draw.circle(screen,(255,0,0),b[0],5,0)
-#         screen.blit(bullet,(b[0][0] - bullet.get_width()//2, b[0][1] - bullet.get_height()//2))
-#
-#     screen.blit(broken_tv,(150 - broken_tv.get_width()//2, 150 - broken_tv.get_height()//2))
-#
-#     fc += 1
-#     clock.tick(60)
-#     pygame.display.flip()
+
+def drawText(surface, text, color, rect, font, aa=False, bkg=None):
+    rect = Rect(rect)
+    y = rect.top
+    lineSpacing = -2
+
+    # get the height of the font
+    fontHeight = font.size("Tg")[1]
+
+    while text:
+        i = 1
+
+        # determine if the row of text will be outside our area
+        if y + fontHeight > rect.bottom:
+            break
+
+        # determine maximum width of line
+        while font.size(text[:i])[0] < rect.width and i < len(text):
+            i += 1
+
+        # if we've wrapped the text, then adjust the wrap to the last word
+        if i < len(text):
+            i = text.rfind(" ", 0, i) + 1
+
+        # render the line and blit it to the surface
+        if bkg:
+            image = font.render(text[:i], 1, color, bkg)
+            image.set_colorkey(bkg)
+        else:
+            image = font.render(text[:i], aa, color)
+
+        surface.blit(image, (rect.left, y))
+        y += fontHeight + lineSpacing
+
+        # remove the text we just blitted
+        text = text[i:]
+
+    return text

@@ -60,7 +60,7 @@ def create_bullet(center,radians):
 
 
 def drawText(surface, text, color, rect, font, aa=False, bkg=None):
-    rect = Rect(rect)
+    rect = pygame.Rect(rect)
     y = rect.top
     lineSpacing = -2
 

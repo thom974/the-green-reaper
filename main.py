@@ -155,7 +155,7 @@ found_enemies = False
 found_tvs = False
 save_screen = None
 level_retry = False
-scroll_obj = [[450 - scroll.get_width()//2,700],[], True]  # sc\roll location, scroll text, scroll active
+scroll_obj = [[450 - scroll.get_width()//2,700],[], False]  # sc\roll location, scroll text, scroll active
 
 # level tiles
 bridge = load_image('bridge').convert()
@@ -288,6 +288,8 @@ while True:
                 char_acceleration = 20
             if event.key == pygame.K_r and not char_alive:
                 level_retry = True
+            if event.key == pygame.K_e:  # for opening level scroll
+                scroll_obj[2] = not scroll_obj[2]
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_w:
                 char_up = False
@@ -809,18 +811,21 @@ while True:
     # scroll system --------------------------------------------------------------------------------------------#
     # add text to scroll depending on level
     if current_level == 1:
-        scroll_text = 'Welcome to Earth! Hope you\'re having a blast. Last time I checked, it was looking kind of filthy there... so do me a favour, and clean it up will ya?'
-        scroll_surf = pygame.Surface(scroll.get_width()-75,scroll.get_width()-75)
-        scroll_rect = pygame.Rect(0,0, scroll_surf.get_width(), scroll_surf.get_height())
-        m.drawText(scroll_surf,scroll_text,(49, 52, 56),scroll_rect,scroll_font,aa=True)
+        scroll_text = 'Welcome to Earth! Hope you\'re having a blast. Last time I checked, it was looking kind of filthy there... so do me a favour, and clean it up will ya?' + ' '*70 + '-Dad'
+        scroll_surf = pygame.Surface((900,600))
+        scroll_surf.set_colorkey((0,0,0))
+        scroll_rect = pygame.Rect(scroll_obj[0][0] + 160,scroll_obj[0][1] + 60, scroll_surf.get_width() - 600, scroll_surf.get_height())
+        m.drawText(scroll_surf,scroll_text,(49, 52, 56),scroll_rect,scroll_font,aa=True,bkg=None)
 
     if scroll_obj[2] and scroll_obj[0][1] >= 100:
         scroll_obj[0][1] -= 5
     elif not scroll_obj[2] and scroll_obj[0][1] <= 650:
-        scroll_obj[0][1] += 5
+        scroll_obj[0][1] += 5                                         
 
     screen.blit(scroll,scroll_obj[0])
-
+    screen.blit(scroll_surf,(0,0))
+    pygame.draw.rect(screen,(255,0,0),scroll_rect,1)
+    
     # increase character mana
     if char_mana <= 255 and frame_count % 5 == 0:
         char_mana += 1

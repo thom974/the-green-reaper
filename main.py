@@ -124,7 +124,7 @@ animations_dictionary['screen_glitch'] = ''
 
 # game HUD
 mana_bar = load_image('mana_bar',True).convert()
-mana_bar = pygame.transform.scale(mana_bar,(300,60))
+mana_bar = pygame.transform.scale(mana_bar,(240,48))
 enemy_counter = load_image('enemy_count').convert()
 enemy_counter.set_colorkey((255,0,0))
 enemy_counter = pygame.transform.scale(enemy_counter,(234,102))
@@ -132,6 +132,9 @@ enemy_counter_bg = pygame.Surface((205,65))
 enemy_counter_bg.fill((125, 125, 125))
 enemy_counter_bg.set_alpha((100))
 enemy_counter_font = create_font(55)
+level_header = load_image('level',True).convert()
+level_header = pygame.transform.scale(level_header,(288,80))
+level_font = create_font(40)
 
 # char animation variables
 char_current_animation = 'idle'  # create variable to hold character's current animation
@@ -734,8 +737,8 @@ while True:
     enemy_number_text2 = enemy_counter_font.render('x ' + str(number_of_enemies), True, (0, 0, 0))
     enemy_number_text_rect = enemy_number_text.get_rect()
     enemy_number_text_rect2 = enemy_number_text2.get_rect()
-    enemy_number_text_rect.center = (150, 180)
-    enemy_number_text_rect2.center = (153, 183)
+    enemy_number_text_rect.center = (830, 180)
+    enemy_number_text_rect2.center = (833, 183)
     # character graphics code ------------------------------------------------------------------------#
     # pygame.draw.rect(screen,(255,0,0),character_hitbox,1)
     # pygame.draw.rect(screen,(0,255,0),character_feet_hitbox,1)
@@ -775,15 +778,20 @@ while True:
     # HUD ----------------------------------------------------------------------------#
 
     screen.blit(game_border,(450 - game_border.get_width()//2,300 - game_border.get_height()//2))
-    screen.blit(mana_bar, (8, 30))
-    mana_bar_fill_bg, mana_bar_fill_sl, mana_bar_fill_fl = e.create_glitch_effect(char_mana, height=10)
-    screen.blit(mana_bar_fill_bg, (14, 55))
-    screen.blit(mana_bar_fill_sl, (14, 55))
-    screen.blit(mana_bar_fill_fl, (14, 55))
-    screen.blit(enemy_counter_bg, (13, 140))
+    screen.blit(mana_bar, (8, 115))
+    mana_bar_fill_bg, mana_bar_fill_sl, mana_bar_fill_fl = e.create_glitch_effect(int(char_mana*0.8), height=8)
+    mana_bar_fill_bg.set_alpha(150)
+    screen.blit(mana_bar_fill_bg, (13, 135))
+    screen.blit(mana_bar_fill_sl, (13, 135))
+    screen.blit(mana_bar_fill_fl, (13, 135))
+    screen.blit(enemy_counter_bg, (682, 140))
     screen.blit(enemy_number_text2,enemy_number_text_rect2)
     screen.blit(enemy_number_text,enemy_number_text_rect)
-    screen.blit(enemy_counter,(8,120))
+    screen.blit(enemy_counter,(659,120))
+    screen.blit(level_header,(450 - level_header.get_width()//2,5))
+    current_level_text = level_font.render('LEVEL ' + str(current_level),True,(174,135,228))
+    current_level_text_rect = current_level_text.get_rect()
+
 
     if char_mana <= 255 and frame_count % 5 == 0:
         char_mana += 1

@@ -125,6 +125,13 @@ animations_dictionary['screen_glitch'] = ''
 # game HUD
 mana_bar = load_image('mana_bar',True).convert()
 mana_bar = pygame.transform.scale(mana_bar,(300,60))
+enemy_counter = load_image('enemy_count').convert()
+enemy_counter.set_colorkey((255,0,0))
+enemy_counter = pygame.transform.scale(enemy_counter,(234,102))
+enemy_counter_bg = pygame.Surface((205,65))
+enemy_counter_bg.fill((125, 125, 125))
+enemy_counter_bg.set_alpha((100))
+enemy_counter_font = create_font(55)
 
 # char animation variables
 char_current_animation = 'idle'  # create variable to hold character's current animation
@@ -133,7 +140,7 @@ char_animation_flip = False  # flip the frame depending on direction moving
 char_animation_lock = False
 
 # level variables
-current_level = 3
+current_level = 5
 current_map = load_map(current_level)
 bg_values = [-150,-150,-150,-150]
 game_scroll = [0,0]
@@ -156,7 +163,7 @@ green_rock, pink_rock  = pygame.transform.scale(green_rock,(80,80)), pygame.tran
 broken_tv = load_image('tv',True).convert()
 broken_tv = pygame.transform.scale(broken_tv,(80,90))
 bullet = load_image('bullet',True).convert()
-bullet = pygame.transform.scale(bullet,(25,25))
+bullet = pygame.transform.scale(bullet,(30,30))
 found_tiles = False
 found_tiles_ypos = False
 bv = 50
@@ -182,7 +189,7 @@ hp_bar = pygame.transform.scale(hp_bar,(55,15))
 # character variables
 char_spawn = [100,0]
 char_x, char_y = (100,100)
-char_speed = 10
+char_speed = 3
 char_up = False
 char_down = False
 char_left = False
@@ -198,6 +205,7 @@ char_loaded = False
 char_scythe = load_image('scythe',True).convert()
 char_scythe = pygame.transform.scale(char_scythe,(135,135))
 char_shadow = load_image('char_shadow',True).convert()
+char_shadow.set_alpha(200)
 display_shadow = True
 
 # char spell casting variables
@@ -417,8 +425,12 @@ while True:
         enemy[5] = enemy_hitbox
 
         if char_loaded:
-            if enemy_hitbox.colliderect(character_feet_hitbox) and enemy[9] >= 255:
-                char_alive = False
+            if not char_up:
+                if enemy_hitbox.colliderect(character_feet_hitbox) and enemy[9] >= 255:
+                    char_alive = False
+            else:
+                if enemy_hitbox.colliderect(character_feet_shadow) and enemy[9] >= 255:
+                    char_alive = False
 
         if enemy[7]:
             screen.blit(hp_bar,[enemy_loc[0] - game_scroll[0] + 15, enemy_loc[1] - game_scroll[1] - 20])
@@ -488,6 +500,7 @@ while True:
             number_of_enemies -= 1  # subtract one from enemy counter
             enemy[7] = False  # don't show hp bar
 
+    # tv code
     for tv_num,tv in enumerate(active_tvs):
         frame = tv[0].copy()
         frame.set_alpha(tv[6])
@@ -504,8 +517,6 @@ while True:
             tv[4] += tv_angle
             tv_angle += 45
             b_loc = [tv[2].x + tv[2].w//2 + game_scroll[0], tv[2].y + tv[2].h//2 + game_scroll[1]]
-            # if tv_num != 0:
-            #     tv[3] = tv[3][:-tv_num*4]
             tv[3].extend(m.create_bullet(b_loc,tv[4]))
             if len(tv[3]) >= 30:
                 del tv[3][:5]
@@ -516,9 +527,9 @@ while True:
                 b[0][1] -= b[1][1]
                 b_hitbox = pygame.Rect(b[0][0] - bullet.get_width()//2 - game_scroll[0], b[0][1] - bullet.get_height()//2 - game_scroll[1], bullet.get_width(), bullet.get_height())
                 screen.blit(bullet,(b[0][0] - bullet.get_width()//2 - game_scroll[0], b[0][1] - bullet.get_height()//2 - game_scroll[1]))
-                # pygame.draw.rect(screen,(255,0,0),b_hitbox,1)
-                # if b_hitbox.colliderect(character_hitbox):
-                #     char_alive = False
+
+                if b_hitbox.colliderect(character_hitbox):
+                    char_alive = False
 
         if not tv[5]:  # start decreasing its alpha if hit by spell
             tv[6] -= 40
@@ -549,7 +560,10 @@ while True:
     for rock in rocks:
         if rock is not None:
             rock_hb = rock[1]
-            collisions = m.check_collision(character_feet_hitbox,rock_hb)
+            if not char_jump:
+                collisions = m.check_collision(character_feet_hitbox,rock_hb)
+            else:
+                collisions = m.check_collision(character_feet_shadow,rock_hb)
             if collisions[0]:
                 char_y -= 5
             elif collisions[1]:
@@ -562,7 +576,10 @@ while True:
     for tree in trees:
         if tree is not None:
             tree_hb = tree[1]
-            collisions = m.check_collision(character_feet_hitbox, tree_hb)
+            if not char_jump:
+                collisions = m.check_collision(character_feet_hitbox, tree_hb)
+            else:
+                collisions = m.check_collision(character_feet_shadow, tree_hb)
             if collisions[0]:
                 char_y -= 5
             elif collisions[1]:
@@ -697,7 +714,6 @@ while True:
         spell_cast[4][1] += 1
         if spell_cast[4][1] >= len(animations_dictionary[spell_cast[4][0]]):
             spell_cast[4] = ['', 0, [0, 0]]
-
     # code for combat detection-----------------------------------------------------------------------#
         for enemy in active_enemies:
             if enemy[5].colliderect(csf_hitbox) and spell_cast[4][1] == 1:  # makes sure detection occurs once per spell cast
@@ -712,7 +728,14 @@ while True:
         for tv in active_tvs:
             if tv[2].colliderect(csf_hitbox) and spell_cast[4][1] == 1:
                 tv[5] = False  # if tv[5] is False, the tv's alpha will start decreasing
-
+    # code for displaying number of enemies ----------------------------------------------------------#
+    # create text for the number of enemies
+    enemy_number_text = enemy_counter_font.render('x ' + str(number_of_enemies), True, (255, 255, 255))
+    enemy_number_text2 = enemy_counter_font.render('x ' + str(number_of_enemies), True, (0, 0, 0))
+    enemy_number_text_rect = enemy_number_text.get_rect()
+    enemy_number_text_rect2 = enemy_number_text2.get_rect()
+    enemy_number_text_rect.center = (150, 180)
+    enemy_number_text_rect2.center = (153, 183)
     # character graphics code ------------------------------------------------------------------------#
     # pygame.draw.rect(screen,(255,0,0),character_hitbox,1)
     # pygame.draw.rect(screen,(0,255,0),character_feet_hitbox,1)
@@ -751,12 +774,16 @@ while True:
 
     # HUD ----------------------------------------------------------------------------#
 
-    screen.blit(game_border,(0,0))
+    screen.blit(game_border,(450 - game_border.get_width()//2,300 - game_border.get_height()//2))
     screen.blit(mana_bar, (8, 30))
     mana_bar_fill_bg, mana_bar_fill_sl, mana_bar_fill_fl = e.create_glitch_effect(char_mana, height=10)
     screen.blit(mana_bar_fill_bg, (14, 55))
     screen.blit(mana_bar_fill_sl, (14, 55))
     screen.blit(mana_bar_fill_fl, (14, 55))
+    screen.blit(enemy_counter_bg, (13, 140))
+    screen.blit(enemy_number_text2,enemy_number_text_rect2)
+    screen.blit(enemy_number_text,enemy_number_text_rect)
+    screen.blit(enemy_counter,(8,120))
 
     if char_mana <= 255 and frame_count % 5 == 0:
         char_mana += 1

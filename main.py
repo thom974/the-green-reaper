@@ -172,7 +172,7 @@ char_animation_lock = False  # used in change_animation function. if True, the c
 
 # level variables
 game_running = True  # bool val which is used by the main game loop
-current_level = 1  # hold the current level
+current_level = 5  # hold the current level
 current_map = load_map(current_level)  # load in the map one
 game_scroll = [0,0]  # allows the game to stay centered on the player as they move. 0th index = x-offset, 1st index = y-offset
 number_of_enemies = 0  # hold the original number of enemies on the current level
@@ -307,6 +307,7 @@ while running:
 
 # main loop ----------------------------------------------------------------------------------------------------------------#
 while game_running:
+    print(number_of_enemies)
     # important game variables
     blocks = []  # holds the block tiles
     trees = []  # holds the tree tiles
@@ -928,6 +929,9 @@ while game_running:
                 if level_transition_alpha >= 255:
                     # reset variables
                     current_level += 1
+                    if current_level == 6:
+                        game_running = False
+                        break
                     current_map = load_map(current_level)
                     game_scroll = [0, 0]
                     char_x, char_y = (100, 100)
@@ -956,32 +960,29 @@ while game_running:
                         active_block, active_tree, active_rock = green_block, green_tree, green_rock
                         active_bg_col, active_bg_col2 = (45, 53, 61), (82, 96, 110)
         else:
-            if current_level != 5:
-                if level_timer >= 1:
-                    # reset variables
-                    current_map = load_map(current_level)
-                    found_tiles = False
-                    game_scroll = [0, 0]
-                    char_x, char_y = (100, 100)
-                    char_alive = True
-                    char_current_animation, char_current_frame, char_animation_lock = 'idle', 0, False
-                    char_acceleration = 0
-                    char_jump, char_fall = False, False
-                    save_screen = None
-                    animations_dictionary['screen_glitch'], animations_dictionary['death'] = '', ''
-                    level_transition_alpha = 0
-                    level_timer = 0
-                    level_fade = False
-                    active_enemies = []
-                    active_tvs = []
-                    found_tvs = False
-                    found_enemies = False
-                    found_tiles = False
-                    level_retry = False
-                    char_mana = 255
-                    scroll_obj = [[450 - scroll.get_width()//2,700], True]
-            else:
-                game_running = False
+            if level_timer >= 1:
+                # reset variables
+                current_map = load_map(current_level)
+                found_tiles = False
+                game_scroll = [0, 0]
+                char_x, char_y = (100, 100)
+                char_alive = True
+                char_current_animation, char_current_frame, char_animation_lock = 'idle', 0, False
+                char_acceleration = 0
+                char_jump, char_fall = False, False
+                save_screen = None
+                animations_dictionary['screen_glitch'], animations_dictionary['death'] = '', ''
+                level_transition_alpha = 0
+                level_timer = 0
+                level_fade = False
+                active_enemies = []
+                active_tvs = []
+                found_tvs = False
+                found_enemies = False
+                found_tiles = False
+                level_retry = False
+                char_mana = 255
+                scroll_obj = [[450 - scroll.get_width()//2,700], True]
 
     frame_count += 1
     if frame_count > 60:

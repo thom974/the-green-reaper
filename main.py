@@ -307,13 +307,13 @@ while running:
 
 # main loop ----------------------------------------------------------------------------------------------------------------#
 while game_running:
-    # some variables
-    blocks = []
-    trees = []
-    rocks = []
-    char_center = (char_x - game_scroll[0] + 40,char_y - game_scroll[1] + 45)
-    character_hitbox = pygame.Rect(char_x - game_scroll[0] + 10, char_y - game_scroll[1] + 10, 70, 90)
-    character_feet_hitbox = pygame.Rect(char_x - game_scroll[0] + 10, char_y - game_scroll[1] + 80, 70, 20)
+    # important game variables
+    blocks = []  # holds the block tiles
+    trees = []  # holds the tree tiles
+    rocks = []  # holds the rock tiles
+    char_center = (char_x - game_scroll[0] + 40,char_y - game_scroll[1] + 45)  # this location represents the center of the character at all times // used for tile rendering
+    character_hitbox = pygame.Rect(char_x - game_scroll[0] + 10, char_y - game_scroll[1] + 10, 70, 90)  # Rect object representing the character's overall hitbox
+    character_feet_hitbox = pygame.Rect(char_x - game_scroll[0] + 10, char_y - game_scroll[1] + 80, 70, 20)  # Rect object representing the character's smaller feet hitbox
 
     # background
     screen.fill(active_bg_col)
@@ -323,44 +323,35 @@ while game_running:
     game_scroll[0] += (char_x - game_scroll[0] - 450 + 37) / 40
     game_scroll[1] += (char_y - game_scroll[1] - 300 + 50) / 40
 
-    # # test spell casting
-    # current_spell_frame = animations_dictionary['slime'][spell_cast[4][1]]
-    # csf_surf = animation_frame_surfaces[current_spell_frame]
-    # screen.blit(csf_surf, (0, 100))
-    # pygame.draw.rect(screen,(255,0,0),(0,100,csf_surf.get_width(),csf_surf.get_height()),1)
-    # spell_cast[4][1] += 1
-    # if spell_cast[4][1] >= len(animations_dictionary['slime']):
-    #     spell_cast[4][1] = 0
-
     # event detection -----------------------------------------------------#
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_w:
+        if event.type == pygame.KEYDOWN: # handle all events regarding keys being pressed down
+            if event.key == pygame.K_w:  # if 'w' was pressed, char is moving up. set char_up to True
                 char_up = True
-            if event.key == pygame.K_s:
+            if event.key == pygame.K_s:  # same concept as with 'w' key
                 char_down = True
             if event.key == pygame.K_a:
                 char_left = True
             if event.key == pygame.K_d:
                 char_right = True
-            if event.key == pygame.K_SPACE and char_jump is False and char_fall is False:
-                char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'jump',char_animation_lock)
-                char_animation_lock = True
-                char_prev_ypos = char_y
+            if event.key == pygame.K_SPACE and char_jump is False and char_fall is False:  # if space was pressed, the character isn't already jumping, and they are not currently falling
+                char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'jump',char_animation_lock)  # changes the current ani. to 'jump' and sets current frame to 0
+                char_animation_lock = True  # lock animation so that character's animation will not change to 'walk' if user presses WASD
+                char_prev_ypos = char_y  # store char's y pos before they jump
                 char_jump = True
-                char_acceleration = 20
-            if event.key == pygame.K_r and not char_alive:
+                char_acceleration = 20  # set character's acceleration
+            if event.key == pygame.K_r and not char_alive:  # handle level retrying: if the character is dead and the user presses 'r', this executes
                 level_retry = True
-            if event.key == pygame.K_e:  # for opening level scroll
-                scroll_obj[1] = not scroll_obj[1]
-        if event.type == pygame.KEYUP:
-            if event.key == pygame.K_w:
+            if event.key == pygame.K_e:  # for opening level scroll, executes if 'e' is pressed
+                scroll_obj[1] = not scroll_obj[1]  # changes the scroll's active state to the inverse of what it was before (if on, turns off // if off, turns on)
+        if event.type == pygame.KEYUP:  # handle all events regarding keys being lifted up
+            if event.key == pygame.K_w:  # if 'w' is lifted up, the char is no longer moving up. set char_up to False
                 char_up = False
-                if not char_jump:
-                    char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'idle',char_animation_lock)
-            if event.key == pygame.K_s:
+                if not char_jump:  # if the character is currently not jumping (and also 'w' is lifted up), this will execute
+                    char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'idle',char_animation_lock)  # change animation to 'idle'
+            if event.key == pygame.K_s:  # same concept as with 'w'
                 char_down = False
                 if not char_jump:
                     char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'idle',char_animation_lock)
@@ -373,38 +364,38 @@ while game_running:
                 if not char_jump:
                     char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'idle',char_animation_lock)
 
-    # rendering map -----------------------------------------------------#
+    # rendering map --------------------------------------------------------------------------------------------------#
 
-    enemy_tiles = [[]]
-    first_etf = False
-    pfet = 0
-    for y, tile_row in enumerate(current_map):
-        found_e_tile = False
+    enemy_tiles = [[]]  # list of lists: each list inside represents all Rect objects which make up a single enemy territory. there is one slime per territory
+    first_etf = False  # bool variable which turns True once the first enemy tile in the map has been found
+    pfet = 0  # previous first enemy tile - holds the y-value of the previous row where an enemy tile was found
+    for y, tile_row in enumerate(current_map):  # this nested for loop iterates through each 'tile' in current_map, which holds all tiles (represented by characters, check map text files for more info)
+        found_e_tile = False  # becomes True once an enemy tile has been found in the current row
         for x,tile in enumerate(tile_row):
-            if tile != "0" and tile != "4" and tile != "5":  # append the ground tile
-                block_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0], (10 + x * bv + y * bv) - game_scroll[1], 101, 101)
-                green_block_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0], (10 + x * bv + y * bv) - game_scroll[1],green_block.get_width(),green_block.get_height())
-                blocks.append([block_rect,green_block_rect])
-                if tile == "2":
-                    tree_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0] - 10, (10 + x * bv + y * bv) - game_scroll[1] - green_tree.get_height() + 80, green_tree.get_width(),green_tree.get_height())
-                    tree_hitbox = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0] + 10, (10 + x * bv + y * bv) - game_scroll[1] - green_tree.get_height() + 80, green_tree.get_width()-20,green_tree.get_height()-20)
-                    trees.append([tree_rect,tree_hitbox])
-                else:
+            if tile != "0" and tile != "4" and tile != "5":  # every tile that is not '0', '4' or '5' # requires a base/ground tile which the player can walk on
+                block_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0], (10 + x * bv + y * bv) - game_scroll[1], 101, 101)  # create a Rect object whose coords depend on the current x/y values of the for loop, and game scroll
+                green_block_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0], (10 + x * bv + y * bv) - game_scroll[1],green_block.get_width(),green_block.get_height())  # create a Rect whose coords again depend on x/y, where the tile Surface will be displayed
+                blocks.append([block_rect,green_block_rect])  # each pair of rectangles is appended as a list to 'blocks', which holds all tiles the game will render later
+                if tile == "2":  # tile num. 2 represents a tree
+                    tree_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0] - 10, (10 + x * bv + y * bv) - game_scroll[1] - green_tree.get_height() + 80, green_tree.get_width(),green_tree.get_height())  # create Rect obj for tree to be blitted, same concept as before
+                    tree_hitbox = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0] + 10, (10 + x * bv + y * bv) - game_scroll[1] - green_tree.get_height() + 80, green_tree.get_width()-20,green_tree.get_height()-20)  # create Rect obj for the tree's hitbox
+                    trees.append([tree_rect,tree_hitbox])  # append as a list both the location Rect and hitbox Rect
+                else:  # 'blocks', 'trees' and 'rocks' are all related lists, so we must append None if the tile is not a tree to keep the same order
                     trees.append(None)
-                if tile == "3":
+                if tile == "3":  # tile num. 3 represents a rock. loaded in the same exact way as trees are
                     rock_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0] + 10, (10 + x * bv + y * bv) - game_scroll[1] + 5, green_rock.get_width(),green_rock.get_height())
                     rock_hitbox = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0] + 10, (10 + x * bv + y * bv) - game_scroll[1] + 25, green_rock.get_width(),green_rock.get_height() // 2)
                     rocks.append([rock_rect,rock_hitbox])
                 else:
                     rocks.append(None)
-                if tile == "6" and not found_tvs:
+                if tile == "6" and not found_tvs:  # tile num. 6 represents a TV enemy. found_tvs becomes True after the very first iteration of the game loop, thus this if statement occurs once
                     tv_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0] + 10, (10 + x * bv + y * bv) - game_scroll[1] + 5, broken_tv.get_width(),broken_tv.get_height())
-                    tv_hitbox = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0] + 10, (10 + x * bv + y * bv) - game_scroll[1] + 25, broken_tv.get_width(),broken_tv.get_height() // 2)
-                    tv_object = tv_obj.copy()
-                    tv_object[1] = tv_rect
-                    tv_object[3] = []
-                    active_tvs.append(tv_object)
-                if tile == "e":  # check for enemy tile
+                    # tv_hitbox = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0] + 10, (10 + x * bv + y * bv) - game_scroll[1] + 25, broken_tv.get_width(),broken_tv.get_height() // 2)
+                    tv_object = tv_obj.copy()  # create a copy of the tv_obj list, which holds all potential attributes of a TV
+                    tv_object[1] = tv_rect  # give the object tv_rect, the location where it is to be blitted
+                    tv_object[3] = []  # required because of how list pointers work
+                    active_tvs.append(tv_object)  # append to list 'active_tvs' the tv object
+                if tile == "e":  # checks for enemy tile
                     if not first_etf:  # only execute once
                         pfet = y
                         first_etf = True

@@ -100,6 +100,11 @@ game_over_rect.center = (450,300)
 game_over_txt_2 = game_over_font_2.render('press \'r\' to retry the level.', True, (204, 20, 20))
 game_over_rect_2 = game_over_txt_2.get_rect()
 game_over_rect_2.center = (450,350)
+ending_txt_font, ending_txt_font2 = create_font(100), create_font(70)
+ending_txt = ending_txt_font.render('thanks for playing!',True,(255,255,255))
+ending_txt2 = ending_txt_font2.render('(and more importantly, saving the earth.)',True,(143, 146, 150))
+ending_txt_rect, ending_txt_rect2 = ending_txt.get_rect(), ending_txt2.get_rect()
+ending_txt_rect.center, ending_txt_rect2.center = (450,270), (450,375)
 
 level_transition = pygame.Surface((900,600))
 level_transition.fill((255,255,255))
@@ -153,7 +158,8 @@ char_animation_flip = False  # flip the frame depending on direction moving
 char_animation_lock = False
 
 # level variables
-current_level = 5
+game_running = True
+current_level = 1
 current_map = load_map(current_level)
 bg_values = [-150,-150,-150,-150]
 game_scroll = [0,0]
@@ -252,7 +258,7 @@ gsl = 0
 # intro variables
 running = True
 intro_overlay_surf = pygame.Surface((900,600))
-intro_overlay_surf.set_alpha(240)
+intro_overlay_surf.set_alpha(200)
 intro_font = create_font(27)
 arrow_font = create_font(70)
 text_rect = pygame.Rect(50,50,800,500)
@@ -289,7 +295,7 @@ while running:
 
 
 # main loop -----------------------------------------------------#
-while True:
+while game_running:
     # some variables
     blocks = []
     trees = []
@@ -950,29 +956,32 @@ while True:
                         active_block, active_tree, active_rock = green_block, green_tree, green_rock
                         active_bg_col, active_bg_col2 = (45, 53, 61), (82, 96, 110)
         else:
-            if level_timer >= 1:
-                # reset variables
-                current_map = load_map(current_level)
-                found_tiles = False
-                game_scroll = [0, 0]
-                char_x, char_y = (100, 100)
-                char_alive = True
-                char_current_animation, char_current_frame, char_animation_lock = 'idle', 0, False
-                char_acceleration = 0
-                char_jump, char_fall = False, False
-                save_screen = None
-                animations_dictionary['screen_glitch'], animations_dictionary['death'] = '', ''
-                level_transition_alpha = 0
-                level_timer = 0
-                level_fade = False
-                active_enemies = []
-                active_tvs = []
-                found_tvs = False
-                found_enemies = False
-                found_tiles = False
-                level_retry = False
-                char_mana = 255
-                scroll_obj = [[450 - scroll.get_width()//2,700],[], True]
+            if current_level != 5:
+                if level_timer >= 1:
+                    # reset variables
+                    current_map = load_map(current_level)
+                    found_tiles = False
+                    game_scroll = [0, 0]
+                    char_x, char_y = (100, 100)
+                    char_alive = True
+                    char_current_animation, char_current_frame, char_animation_lock = 'idle', 0, False
+                    char_acceleration = 0
+                    char_jump, char_fall = False, False
+                    save_screen = None
+                    animations_dictionary['screen_glitch'], animations_dictionary['death'] = '', ''
+                    level_transition_alpha = 0
+                    level_timer = 0
+                    level_fade = False
+                    active_enemies = []
+                    active_tvs = []
+                    found_tvs = False
+                    found_enemies = False
+                    found_tiles = False
+                    level_retry = False
+                    char_mana = 255
+                    scroll_obj = [[450 - scroll.get_width()//2,700],[], True]
+            else:
+                game_running = False
 
     frame_count += 1
     if frame_count > 60:
@@ -985,3 +994,19 @@ while True:
     pygame.display.flip()
     clock.tick(FPS)
 
+while True:
+    glitch_bgs = e.create_glitch_effect(900,height=600)
+
+    for glitch_bg in glitch_bgs:
+        screen.blit(glitch_bg,(0,0))
+
+    screen.blit(intro_overlay_surf,(0,0))
+    screen.blit(ending_txt,ending_txt_rect)
+    screen.blit(ending_txt2,ending_txt_rect2)
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+
+    clock.tick(60)
+    pygame.display.update()

@@ -11,7 +11,7 @@ import data.scripts.effects as e
 # setting up pygame ---------------------------------------------#
 
 pygame.init()
-pygame.display.set_caption('insert game title here')
+pygame.display.set_caption('The Green Reaper')
 size = (screen_width, screen_height) = (900,600)
 screen = pygame.display.set_mode(size)
 temp_display = pygame.Surface((300,300))
@@ -115,7 +115,7 @@ game_border = pygame.transform.scale(game_border,(900,600))
 f = open('data/maps/game_intro.txt','r')
 intro_text = ''
 for line in f:
-    line = line.rstrip("\n")
+    line = line.rstrip("\n") + ' '
     intro_text += line 
 f.close()
 # animations
@@ -144,7 +144,7 @@ level_header = pygame.transform.scale(level_header,(288,80))
 level_font = create_font(50)
 scroll = load_image('scroll',True).convert()
 scroll = pygame.transform.scale(scroll,(600,728))
-scroll_font = create_font(40)
+scroll_font = create_font(30)
 
 # char animation variables
 char_current_animation = 'idle'  # create variable to hold character's current animation
@@ -153,7 +153,7 @@ char_animation_flip = False  # flip the frame depending on direction moving
 char_animation_lock = False
 
 # level variables
-current_level = 1
+current_level = 5
 current_map = load_map(current_level)
 bg_values = [-150,-150,-150,-150]
 game_scroll = [0,0]
@@ -162,7 +162,7 @@ found_enemies = False
 found_tvs = False
 save_screen = None
 level_retry = False
-scroll_obj = [[450 - scroll.get_width()//2,700],[], False]  # sc\roll location, scroll text, scroll active
+scroll_obj = [[450 - scroll.get_width()//2,700],[], True]  # sc\roll location, scroll text, scroll active
 
 # level tiles
 bridge = load_image('bridge').convert()
@@ -223,16 +223,18 @@ char_shadow.set_alpha(200)
 display_shadow = True
 
 # char spell casting variables
-# grid_point = pygame.image.load('data/images/grid_point.png').convert()
 grid_point = load_image('grid_point',True).convert()
 grid_point = pygame.transform.scale(grid_point,(30,30))
-# spell_bg = pygame.image.load('data/images/spell_bg.png').convert()
 spell_bg = load_image('spell_bg',True).convert()
 grid_scale = 1  # adjust the gap between grid points
 grid_point_diff = 1
 grid_points = []
 grid_max = False
 active_point = 4
+slash_pic = load_image('slash',True).convert()
+slash_pic = pygame.transform.scale(slash_pic,(150,150))
+thunder_pic = load_image('thunder',True).convert()
+thunder_pic = pygame.transform.scale(thunder_pic,(150,150))
 
 spells_dictionary = {                # spell pattern, cost
     'slash': [[2, 1, 0, 3, 6],50],
@@ -246,15 +248,44 @@ glitch_colours = [(16, 26, 86),(22, 45, 118),(36, 86, 196),(195, 20, 118),(51, 7
 bn = 30
 sn = 100
 gsl = 0
+
+# intro variables
 running = True
+intro_overlay_surf = pygame.Surface((900,600))
+intro_overlay_surf.set_alpha(240)
+intro_font = create_font(27)
+arrow_font = create_font(70)
+text_rect = pygame.Rect(50,50,800,500)
+intro_framecount = 0
+
 while running:
-    screen.fill((255,255,255))
-    
-    #
+    mx, my = pygame.mouse.get_pos()
+    glitch_bgs = e.create_glitch_effect(900,height=600)
+    arrow_str = '>' * (intro_framecount // 20 + 1)
+    arrow_text = arrow_font.render(arrow_str,True,(255,255,255))
+    arrow_text_rect = arrow_text.get_rect()
+    arrow_text_rect.center = (800,550)
+
+    for glitch_bg in glitch_bgs:
+        screen.blit(glitch_bg,(0,0))
+
+    screen.blit(intro_overlay_surf,(0,0))
+    m.drawText(screen,intro_text,(255,255,255),text_rect,intro_font,aa=True,bkg=None)
+    screen.blit(arrow_text,arrow_text_rect)
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
+        if event.type == pygame.MOUSEBUTTONDOWN and arrow_text_rect.collidepoint(mx,my):
+            running = False
 
+    if intro_framecount < 59:
+        intro_framecount += 1
+    else:
+        intro_framecount = 0
+
+    clock.tick(60)
+    pygame.display.update()
 
 
 # main loop -----------------------------------------------------#
@@ -544,7 +575,7 @@ while True:
             tv_angle += 45
             b_loc = [tv[2].x + tv[2].w//2 + game_scroll[0], tv[2].y + tv[2].h//2 + game_scroll[1]]
             tv[3].extend(m.create_bullet(b_loc,tv[4]))
-            if len(tv[3]) >= 30:
+            if len(tv[3]) >= 20:
                 del tv[3][:5]
 
         if len(tv[3]) != 0:
@@ -827,12 +858,27 @@ while True:
 
     # scroll system --------------------------------------------------------------------------------------------#
     # add text to scroll depending on level
+    scroll_surf = pygame.Surface((900,600))
+    scroll_surf.set_colorkey((0,0,0))
+    scroll_rect = pygame.Rect(scroll_obj[0][0] + 160,scroll_obj[0][1] + 60, scroll_surf.get_width() - 600, scroll_surf.get_height())
+
     if current_level == 1:
-        scroll_text = 'Welcome to Earth! Hope you\'re having a blast. Last time I checked, it was looking kind of filthy there... so do me a favour, and clean it up will ya?' + ' '*70 + '-Dad'
-        scroll_surf = pygame.Surface((900,600))
-        scroll_surf.set_colorkey((0,0,0))
-        scroll_rect = pygame.Rect(scroll_obj[0][0] + 160,scroll_obj[0][1] + 60, scroll_surf.get_width() - 600, scroll_surf.get_height())
+        scroll_text = "This is how I'll be communicating with you. If you want to view/close this scroll, press 'E'. To cast your basic slash attack, hold down the mouse button and drag the following pattern. Good luck! (note: follow the rainbow.)"
         m.drawText(scroll_surf,scroll_text,(49, 52, 56),scroll_rect,scroll_font,aa=True,bkg=None)
+        scroll_surf.blit(slash_pic,[scroll_obj[0][0] + 230, scroll_obj[0][1] + 330])
+    elif current_level == 2:
+        scroll_text = "Good job on clearing those blobs. Seems as if they had mutated from some sort of chemical concoction left laying around. Keep moving onward!"
+        m.drawText(scroll_surf,scroll_text,(49, 52, 56),scroll_rect,scroll_font,aa=True,bkg=None)
+    elif current_level == 3:
+        scroll_text = "You're moving into much more dangerous territory now. I'll show you another spell that will allow you to cast a much more powerful attack - a thunderbolt. Use it at your own discretion, however! It takes a lot of energy. "
+        m.drawText(scroll_surf, scroll_text, (49, 52, 56), scroll_rect, scroll_font, aa=True, bkg=None)
+        scroll_surf.blit(thunder_pic,[scroll_obj[0][0] + 230, scroll_obj[0][1] + 330])
+    elif current_level == 4:
+        scroll_text = "I've picked up some traces of another mutation... it appears to be what humans call 'televisions'. However, they're no ordinary televisions - they shoot bullets! They're indestructible, so don't even try destroying them. Once a TV is destroyed, you won't have to worry about its bullets anymore."
+        m.drawText(scroll_surf, scroll_text, (49, 52, 56), scroll_rect, scroll_font, aa=True, bkg=None)
+    elif current_level == 5:
+        scroll_text = "This is the ultimate test. I'm sensing a significantly higher amount of enemies in this location... so give it your all! Those spells are all you're gonna get. I'll see you on the other side!"
+        m.drawText(scroll_surf, scroll_text, (49, 52, 56), scroll_rect, scroll_font, aa=True, bkg=None)
 
     if scroll_obj[2] and scroll_obj[0][1] >= 100:
         scroll_obj[0][1] -= 15
@@ -841,8 +887,7 @@ while True:
 
     screen.blit(scroll,scroll_obj[0])
     screen.blit(scroll_surf,(0,0))
-    pygame.draw.rect(screen,(255,0,0),scroll_rect,1)
-    
+
     # increase character mana
     if char_mana <= 255 and frame_count % 5 == 0:
         char_mana += 1
@@ -897,6 +942,7 @@ while True:
                     found_tiles = False
                     char_mana = 255
                     level_retry = False
+                    scroll_obj = [[450 - scroll.get_width()//2,700],[], True]
                     if current_level % 2 == 0:
                         active_block, active_tree, active_rock = pink_block, pink_tree, pink_rock
                         active_bg_col, active_bg_col2 = (166, 27, 38), (102, 18, 25)
@@ -926,6 +972,7 @@ while True:
                 found_tiles = False
                 level_retry = False
                 char_mana = 255
+                scroll_obj = [[450 - scroll.get_width()//2,700],[], True]
 
     frame_count += 1
     if frame_count > 60:

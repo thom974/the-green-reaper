@@ -20,6 +20,7 @@ clock = pygame.time.Clock()
 FPS = 60
 frame_count = 0
 second_frame_count = 0
+
 # helpful functions and code---------------------------------------------#
 
 
@@ -110,7 +111,13 @@ game_border = load_image('border',True).convert()
 game_border = pygame.transform.scale(game_border,(900,600))
 
 # loading in game variables -------------------------------------#
-
+# intro message
+f = open('data/maps/game_intro.txt','r')
+intro_text = ''
+for line in f:
+    line = line.rstrip("\n")
+    intro_text += line 
+f.close()
 # animations
 animations_dictionary['idle'] = load_animation('data/images/animations/idle',[20,20])
 animations_dictionary['walk'] = load_animation('data/images/animations/walk',[10,10,10])
@@ -239,7 +246,17 @@ glitch_colours = [(16, 26, 86),(22, 45, 118),(36, 86, 196),(195, 20, 118),(51, 7
 bn = 30
 sn = 100
 gsl = 0
-test_var = False
+running = True
+while running:
+    screen.fill((255,255,255))
+    
+    #
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+
+
+
 # main loop -----------------------------------------------------#
 while True:
     # some variables
@@ -818,9 +835,9 @@ while True:
         m.drawText(scroll_surf,scroll_text,(49, 52, 56),scroll_rect,scroll_font,aa=True,bkg=None)
 
     if scroll_obj[2] and scroll_obj[0][1] >= 100:
-        scroll_obj[0][1] -= 5
+        scroll_obj[0][1] -= 15
     elif not scroll_obj[2] and scroll_obj[0][1] <= 650:
-        scroll_obj[0][1] += 5                                         
+        scroll_obj[0][1] += 15
 
     screen.blit(scroll,scroll_obj[0])
     screen.blit(scroll_surf,(0,0))

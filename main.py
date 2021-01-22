@@ -1,9 +1,19 @@
+'''
+Name: Thomas Luc
+Date: Jan 22, 2021
+Class Code: ICS3U
+Teacher: Mrs. Bokhari
+
+Description: An (environmentally-friendly) game called 'The Green Reaper', made with the pygame Python module.
+The player controls a 'grim reaper' character and casts spells using a 3x3 to kill different enemies. The premise
+of the story is that the character is killing off 'mutations' which originated from pollution, and in doing so, cleans
+the planet. There are 5 different zones to go through, with increasing difficulty. The game mimics an isometric style rendering,
+so each tile appears to look three dimensional.
+'''
+
 # importing modules ---------------------------------------------#
 
 import pygame
-import math
-import random
-import sys
 
 import data.scripts.math_functions as m
 import data.scripts.effects as e
@@ -16,66 +26,66 @@ size = (screen_width, screen_height) = (900,600)
 screen = pygame.display.set_mode(size)
 temp_display = pygame.Surface((300,300))
 clock = pygame.time.Clock()
-# pygame.mouse.set_visible(False)
 FPS = 60
 frame_count = 0
 second_frame_count = 0
+animation_frame_surfaces = {}  # holds all the frames' surfaces
+animations_dictionary = {}  # holds a list for every animation type, the keys being the name of each animation
 
 # helpful functions and code---------------------------------------------#
 
 
-def load_image(filename,*args):
+def load_image(filename,*args):  # used to load in each image from the 'images' directory. optional arguments to specify colorkey.
     surface = pygame.image.load('data/images/' + filename + '.png')
-    if len(args) != 0 and args[0]:
-        surface.set_colorkey((255,255,255))
+    if len(args) != 0 and args[0]:  # if an optional argument was specified and it is 'True'
+        surface.set_colorkey((255,255,255))  # make white bg transparent
     else:
-        surface.set_colorkey((0,0,0))  # remove black background
+        surface.set_colorkey((0,0,0))  # make black bg transparent
     return surface
 
-animation_frame_surfaces = {}  # holds all the frames' surfaces
-animations_dictionary = {}  # holds a list for every animation type, the keys being the name of each animation
 
-
-def load_animation(directory,frame_frequency,**kwargs):  # frame_frequency holds a list, ex. [1,1] specifying how many times should appear in an animation
-    global animation_frame_surfaces
+def load_animation(directory,frame_frequency,**kwargs):  # used to load in each animation in the game
+    global animation_frame_surfaces  # each actual frame contained in the specified animation will be added to this dictionary
     animation_name = directory.split('/')[-1]
-    animation_frame_names = []
+    animation_frame_names = []  # this list will hold just the names (string) of each frame_name for the ENTIRE animation
 
-    for num, frame in enumerate(frame_frequency):
+    for num, frame in enumerate(frame_frequency):  # frame_frequency holds a list, ex. [1,1] specifying how many times each frame should appear in an animation
         frame_name = animation_name + str(num)  # create the name of the frame
-        frame_location = directory + '/' + frame_name + '.png'  # create the location of each frame image
+        frame_location = directory + '/' + frame_name + '.png'  # create the location of the frame image, using the frame_name var
         frame_image = pygame.image.load(frame_location).convert()  # load in each frame image
         frame_image.set_colorkey((255,255,255))  # sets white bg to transparent
-        if 'size' not in kwargs:
-            frame_image = pygame.transform.scale(frame_image,(100,100))
+
+        if 'size' not in kwargs:  # if the keyworded argument 'size' was not given, this executes
+            frame_image = pygame.transform.scale(frame_image,(100,100))  # by default, each frame will be 100x100 px
         else:
-            frame_image = pygame.transform.scale(frame_image,kwargs['size'])
+            frame_image = pygame.transform.scale(frame_image,kwargs['size'])  # if a size was specified, each frame image will become that size
+
         animation_frame_surfaces[frame_name] = frame_image.copy()  # load into dictionary the frame name + its actual surface
 
-        for _ in range(frame):
-            animation_frame_names.append(frame_name)
+        for _ in range(frame):  # frame is equal to the number in each index of frame_frequency. e.g [1,1] --> frame = 1 when this loop first iterates
+            animation_frame_names.append(frame_name)  # frame_name will be appended 'frame' (frame is a num) times.
 
-    return animation_frame_names  # return all the frame names for an animation
-
-
-def change_animation(animation_name,frame,new_animation,lock):
-    if animation_name != new_animation and not lock:
-        char_animation = new_animation
-        char_frame = 0
-        return char_animation, char_frame
-    return animation_name,frame
+    return animation_frame_names  # return all the frame names for the animation.
 
 
-def create_font(font_size):
+def change_animation(animation_name,frame,new_animation,lock):  # used to change the player's animation during the game
+    if animation_name != new_animation and not lock:  # animation_name represents the char's current animation. if it is the same as the proposed new animation, don't change it
+        char_animation = new_animation  # otherwise, we save the new animation in a var
+        char_frame = 0  # reset the char's current frame to 0 so we start at the first frame of the new animation
+        return char_animation, char_frame  # return the name of the new animation to change to + the char's frame (0)
+    return animation_name,frame  # this will just return the same values found in the parameters
+
+
+def create_font(font_size):  # this returns the 'Silver' font with the specified size
     return pygame.font.Font('data/Silver.ttf', font_size)
 
 
-def create_bg(vals,col):
-    w,x,y,z = vals
-    poly_points1 = [(0,150+x),(900,0+x),(900,100+x),(0,250+x)]
+def create_bg(col):  # this is used to create the diagonal stripes seen in the background
+    y = -150  # the polygon y-offset
+    poly_points1 = [(0,150+y),(900,0+y),(900,100+y),(0,250+y)]  # each set of poly points have increasing y values
     poly_points2 = [(0,350+y),(900,200+y),(900,300+y),(0,450+y)]
-    poly_points3 = [(0,550+z),(900,400+z),(900,500+z),(0,650+z)]
-    poly_points4 = [(0,750+w),(900,600+w),(900,700+w),(0,850+w)]
+    poly_points3 = [(0,550+y),(900,400+y),(900,500+y),(0,650+y)]
+    poly_points4 = [(0,750+y),(900,600+y),(900,700+y),(0,850+y)]
 
     pygame.draw.polygon(screen,col,poly_points1,0)
     pygame.draw.polygon(screen,col,poly_points2,0)
@@ -83,20 +93,21 @@ def create_bg(vals,col):
     pygame.draw.polygon(screen,col,poly_points4,0)
 
 
-def load_map(map_num):
-    map_name = 'map' + str(map_num)
+def load_map(map_num):  # used for returning the map information of the map_num passed
+    map_name = 'map' + str(map_num)  # create the name of the map that we're opening
     f = open('data/maps/' + map_name + '.txt', 'r')
-    map_data = [[tile for tile in tile_row.rstrip("\n")] for tile_row in f]
+    map_data = [[tile for tile in tile_row.rstrip("\n")] for tile_row in f]  # returns a nested list. each list holds the individual characters of one row
+    f.close()
     return map_data
 
 
 # creating game over screen
-backdrop = pygame.Surface((900,600))
-backdrop.set_alpha(150)
+backdrop = pygame.Surface((900,600))  # backdrop used to place on top of glitchy screen
+backdrop.set_alpha(150)  # make it semi-transparent so the user can still see the glitchy screen
 game_over_font, game_over_font_2 = create_font(70), create_font(40)
 game_over_txt = game_over_font.render('game over.', True,(194, 194, 194))
-game_over_rect = game_over_txt.get_rect()
-game_over_rect.center = (450,300)
+game_over_rect = game_over_txt.get_rect()  # create a rectangle from the given text
+game_over_rect.center = (450,300)  # set its center so that I can easily display an element where I want it
 game_over_txt_2 = game_over_font_2.render('press \'r\' to retry the level.', True, (204, 20, 20))
 game_over_rect_2 = game_over_txt_2.get_rect()
 game_over_rect_2.center = (450,350)
@@ -106,24 +117,26 @@ ending_txt2 = ending_txt_font2.render('(and more importantly, saving the earth.)
 ending_txt_rect, ending_txt_rect2 = ending_txt.get_rect(), ending_txt2.get_rect()
 ending_txt_rect.center, ending_txt_rect2.center = (450,270), (450,375)
 
-level_transition = pygame.Surface((900,600))
-level_transition.fill((255,255,255))
-level_transition_alpha = 0
+level_transition = pygame.Surface((900,600))  # screen used as transition
+level_transition.fill((255,255,255))  # fill bg with white
+level_transition_alpha = 0  # var to hold the Surface's alpha val
 level_fade = False
 level_timer = 0
 
 game_border = load_image('border',True).convert()
 game_border = pygame.transform.scale(game_border,(900,600))
 
-# loading in game variables -------------------------------------#
-# intro message
+# loading in game variables ----------------------------------------------------------------------------#
+
+# loading in intro message
 f = open('data/maps/game_intro.txt','r')
 intro_text = ''
 for line in f:
     line = line.rstrip("\n") + ' '
     intro_text += line 
 f.close()
-# animations
+
+# loading in animations
 animations_dictionary['idle'] = load_animation('data/images/animations/idle',[20,20])
 animations_dictionary['walk'] = load_animation('data/images/animations/walk',[10,10,10])
 animations_dictionary['jump'] = load_animation('data/images/animations/jump',[2,2,4,2,4,1])
@@ -131,10 +144,10 @@ animations_dictionary['slash'] = load_animation('data/images/animations/slash',[
 animations_dictionary['thunder'] = load_animation('data/images/animations/thunder',[2,2,2,2,2,2,2,2,2,2,5,2,2,2],size=(105,355))
 animations_dictionary['slime'] = load_animation('data/enemies/slime',[15,15,15],size=(85,55))
 animations_dictionary['slime_dmg'] = load_animation('data/enemies/damage/slime_dmg',[10],size=(85,55))
-animations_dictionary['death'] = ''
-animations_dictionary['screen_glitch'] = ''
+animations_dictionary['death'] = ''  # empty for now as this animations are created depending on the char's current animation
+animations_dictionary['screen_glitch'] = ''  # empty for now as this animation requires a copy of the current screen when the char dies
 
-# game HUD
+# game HUD (head up display)
 mana_bar = load_image('mana_bar',True).convert()
 mana_bar = pygame.transform.scale(mana_bar,(240,48))
 enemy_counter = load_image('enemy_count').convert()
@@ -142,7 +155,7 @@ enemy_counter.set_colorkey((255,0,0))
 enemy_counter = pygame.transform.scale(enemy_counter,(234,102))
 enemy_counter_bg = pygame.Surface((205,65))
 enemy_counter_bg.fill((125, 125, 125))
-enemy_counter_bg.set_alpha((100))
+enemy_counter_bg.set_alpha(100)
 enemy_counter_font = create_font(55)
 level_header = load_image('level',True).convert()
 level_header = pygame.transform.scale(level_header,(288,80))
@@ -153,24 +166,23 @@ scroll_font = create_font(30)
 
 # char animation variables
 char_current_animation = 'idle'  # create variable to hold character's current animation
-char_current_frame = 0
+char_current_frame = 0  # holds the char frame. it is used to draw the appropriate frame in an animation sequence
 char_animation_flip = False  # flip the frame depending on direction moving
-char_animation_lock = False
+char_animation_lock = False  # used in change_animation function. if True, the char's animation will not change
 
 # level variables
-game_running = True
-current_level = 1
-current_map = load_map(current_level)
-bg_values = [-150,-150,-150,-150]
-game_scroll = [0,0]
-number_of_enemies = 0
+game_running = True  # bool val which is used by the main game loop
+current_level = 1  # hold the current level
+current_map = load_map(current_level)  # load in the map one
+game_scroll = [0,0]  # allows the game to stay centered on the player as they move. 0th index = x-offset, 1st index = y-offset
+number_of_enemies = 0  # hold the original number of enemies on the current level
 found_enemies = False
 found_tvs = False
 save_screen = None
 level_retry = False
-scroll_obj = [[450 - scroll.get_width()//2,700],[], True]  # sc\roll location, scroll text, scroll active
+scroll_obj = [[450 - scroll.get_width()//2,700],True]  # IN ORDER: scroll location (x,y), scroll active
 
-# level tiles
+# game assets
 bridge = load_image('bridge').convert()
 bridge_reverse = pygame.transform.flip(bridge,True,False)
 bridge, bridge_reverse = pygame.transform.scale(bridge,(101,169)), pygame.transform.scale(bridge_reverse,(101,169))
@@ -184,13 +196,15 @@ broken_tv = load_image('tv',True).convert()
 broken_tv = pygame.transform.scale(broken_tv,(80,90))
 bullet = load_image('bullet',True).convert()
 bullet = pygame.transform.scale(bullet,(30,30))
+
+# map tile variables
 found_tiles = False
 found_tiles_ypos = False
-bv = 50
-active_block, active_tree, active_rock = green_block, green_tree, green_rock
-active_bg_col, active_bg_col2 = (45, 53, 61), (82, 96, 110)
+bv = 50  # number which scales the x and y distance between each rendered tile
+active_block, active_tree, active_rock = green_block, green_tree, green_rock  # these three variables hold the current asset to be displayed, as blocks/trees/rocks have two potential colours
+active_bg_col, active_bg_col2 = (45, 53, 61), (82, 96, 110)  # variables to hold the current background colours
 
-clean_block = load_image('ground_clean').convert()
+clean_block = load_image('ground_clean').convert()  # load in clean assets (blocks/trees/rocks) for when the player clears the level
 clean_block = pygame.transform.scale(clean_block,(101,170))
 clean_tree = load_image('clean_tree').convert()
 clean_tree = pygame.transform.scale(clean_tree,(120,189))
@@ -198,52 +212,51 @@ clean_rock = load_image('clean_rock').convert()
 clean_rock = pygame.transform.scale(clean_rock,(80,80))
 
 # enemies
-slime_obj = ['slime',[0,0],0,[],'right',None,'move',False,2,255]  # name, location, current frame, enemy tiles, direction, hp_bar, animation, display hp_bar, hp, alpha
-tv_obj = [broken_tv,[],None,[],0,True, 255]  # frame, location, hitbox, bullet list, bullet angle, show on screen bool, alpha
-active_enemies = []
-active_tvs = []
-tv_angle = 0
+slime_obj = ['slime',[0,0],0,[],'right',None,'move',False,2,255]  # IN ORDER: name, location, current frame, enemy tiles, direction, hp_bar, animation, display hp_bar, hp, alpha
+tv_obj = [broken_tv,[],None,[],0,True, 255, 0]  # IN ORDER: frame, location, hitbox, bullet list, bullet angle, show on screen bool, alpha, angle
+active_enemies = []  # variable to hold all active slimes
+active_tvs = []  # variable to hold all active TVs
 hp_bar = load_image('health_bar',True).convert()
 hp_bar = pygame.transform.scale(hp_bar,(55,15))
 
 # character variables
-char_spawn = [100,0]
-char_x, char_y = (100,100)
+char_spawn = [100,0]  # character initial spawn location on map
+char_x, char_y = (100,100)  # character x/y values
 char_speed = 3
-char_up = False
+char_up = False  # up/down/left/right bool vals will turn True if their respective directional keys are held down. upon release, they become False
 char_down = False
 char_left = False
 char_right = False
-char_jump = False
-char_fall = False
-char_acceleration = 0
-char_prev_pos = 0
-char_mana = 255
+char_jump = False  # becomes True if the character is jumping (spacebar is pressed)
+char_fall = False  # becomes True if the character is falling down from jump
+char_acceleration = 0  # for changing character's vertical acceleration
+char_prev_pos = 0  # used to store character's previous y position after a jump, for when they land
+char_mana = 255  # character's mana
 char_alive = True
 char_loaded = False
 
-char_scythe = load_image('scythe',True).convert()
+char_scythe = load_image('scythe',True).convert()  # scythe which appears to be on the back of the character
 char_scythe = pygame.transform.scale(char_scythe,(135,135))
 char_shadow = load_image('char_shadow',True).convert()
 char_shadow.set_alpha(200)
-display_shadow = True
+display_shadow = True  # character's shadow will show below their feet if this bool is True
 
 # char spell casting variables
-grid_point = load_image('grid_point',True).convert()
+grid_point = load_image('grid_point',True).convert()  # each 'grid point' or 'dot' on the 3x3 grid
 grid_point = pygame.transform.scale(grid_point,(30,30))
-spell_bg = load_image('spell_bg',True).convert()
+spell_bg = load_image('spell_bg',True).convert()  # the frame seen around the 3x3 grid
 grid_scale = 1  # adjust the gap between grid points
-grid_point_diff = 1
-grid_points = []
-grid_max = False
-active_point = 4
-slash_pic = load_image('slash',True).convert()
+grid_point_diff = 1  # used to increase the difference in distance between each point, to make the grid expand
+grid_points = []  # holds the locations of all 3x3 grid points
+grid_max = False  # turns True once the grid becomes a certain size
+active_point = 4  # holds a num which corresponds to a certain grid point. the line being drawn will always start at this grid point
+slash_pic = load_image('slash',True).convert()  # picture of the 'slash' attack pattern for scroll tutorial
 slash_pic = pygame.transform.scale(slash_pic,(150,150))
-thunder_pic = load_image('thunder',True).convert()
+thunder_pic = load_image('thunder',True).convert()  # picture of the 'thunder' attack pattern for scroll tutorial
 thunder_pic = pygame.transform.scale(thunder_pic,(150,150))
 
-spells_dictionary = {                # spell pattern, cost
-    'slash': [[2, 1, 0, 3, 6],50],
+spells_dictionary = {
+    'slash': [[2, 1, 0, 3, 6],50],  # 0th index: each number represents a grid point which must've been drawn to. this is the spell pattern. 1st index: spell mana cost
     'thunder': [[1, 3, 4, 5, 7],100]
 }
 
@@ -251,9 +264,7 @@ spell_cast = [False,[0,0],[],[],['',0,[0,0]]]  # spell active, grid location, li
 
 # glitch colours
 glitch_colours = [(16, 26, 86),(22, 45, 118),(36, 86, 196),(195, 20, 118),(51, 7, 57),(28, 93, 129),(163, 127, 241),(99, 24, 79),(69, 173, 204)]
-bn = 30
-sn = 100
-gsl = 0
+gsl = 0  # grow side length - used to scale up certain glitch effects, such as the one found in the 3x3 grid
 
 # intro variables
 running = True
@@ -264,26 +275,27 @@ arrow_font = create_font(70)
 text_rect = pygame.Rect(50,50,800,500)
 intro_framecount = 0
 
+# introductory game loop ---------------------------------------------------------------------------------------------------------------#
 while running:
-    mx, my = pygame.mouse.get_pos()
-    glitch_bgs = e.create_glitch_effect(900,height=600)
-    arrow_str = '>' * (intro_framecount // 20 + 1)
+    mx, my = pygame.mouse.get_pos()  # vars for holding mouse position
+    glitch_bgs = e.create_glitch_effect(900,height=600)  # returns a list containing each Surface a part of the 'glitch' effect. there are three overall layers
+    arrow_str = '>' * (intro_framecount // 20 + 1)  # this will be a str with 1,2 or 3 '>' symbols depending on the frame count
     arrow_text = arrow_font.render(arrow_str,True,(255,255,255))
     arrow_text_rect = arrow_text.get_rect()
     arrow_text_rect.center = (800,550)
 
-    for glitch_bg in glitch_bgs:
+    for glitch_bg in glitch_bgs:  # blit each Surface in the glitch_bgs list onto the screen
         screen.blit(glitch_bg,(0,0))
 
     screen.blit(intro_overlay_surf,(0,0))
-    m.drawText(screen,intro_text,(255,255,255),text_rect,intro_font,aa=True,bkg=None)
+    m.drawText(screen,intro_text,(255,255,255),text_rect,intro_font,aa=True,bkg=None)  # use drawText function to draw text, which automatically wraps depending on the rectangle passed as parameter
     screen.blit(arrow_text,arrow_text_rect)
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
-        if event.type == pygame.MOUSEBUTTONDOWN and arrow_text_rect.collidepoint(mx,my):
-            running = False
+        if event.type == pygame.MOUSEBUTTONDOWN and arrow_text_rect.collidepoint(mx,my):  # check for when the user presses the arrow
+            running = False  # stop the loop so that the program starts executing the main game loop
 
     if intro_framecount < 59:
         intro_framecount += 1
@@ -293,8 +305,7 @@ while running:
     clock.tick(60)
     pygame.display.update()
 
-
-# main loop -----------------------------------------------------#
+# main loop ----------------------------------------------------------------------------------------------------------------#
 while game_running:
     # some variables
     blocks = []
@@ -306,7 +317,7 @@ while game_running:
 
     # background
     screen.fill(active_bg_col)
-    create_bg(bg_values,active_bg_col2)
+    create_bg(active_bg_col2)
 
     # control game scroll
     game_scroll[0] += (char_x - game_scroll[0] - 450 + 37) / 40
@@ -343,7 +354,7 @@ while game_running:
             if event.key == pygame.K_r and not char_alive:
                 level_retry = True
             if event.key == pygame.K_e:  # for opening level scroll
-                scroll_obj[2] = not scroll_obj[2]
+                scroll_obj[1] = not scroll_obj[1]
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_w:
                 char_up = False
@@ -575,10 +586,8 @@ while game_running:
             char_alive = False
 
         if frame_count == 59 and tv[5]:  # will execute every 1 second
-            if tv_num == 2:
-                test_var = True
-            tv[4] += tv_angle
-            tv_angle += 45
+            tv[4] += tv[6]
+            tv[6] += 45
             b_loc = [tv[2].x + tv[2].w//2 + game_scroll[0], tv[2].y + tv[2].h//2 + game_scroll[1]]
             tv[3].extend(m.create_bullet(b_loc,tv[4]))
             if len(tv[3]) >= 20:
@@ -880,15 +889,15 @@ while game_running:
         m.drawText(scroll_surf, scroll_text, (49, 52, 56), scroll_rect, scroll_font, aa=True, bkg=None)
         scroll_surf.blit(thunder_pic,[scroll_obj[0][0] + 230, scroll_obj[0][1] + 330])
     elif current_level == 4:
-        scroll_text = "I've picked up some traces of another mutation... it appears to be what humans call 'televisions'. However, they're no ordinary televisions - they shoot bullets! They're indestructible, so don't even try destroying them. Once a TV is destroyed, you won't have to worry about its bullets anymore."
+        scroll_text = "I've picked up some traces of another mutation... it appears to be what humans call 'televisions'. However, they're no ordinary televisions - they shoot bullets! Those bullets are indestructible, so don't even try destroying them. I'd recommend getting rid of those TVs first, because they are extremely annoying."
         m.drawText(scroll_surf, scroll_text, (49, 52, 56), scroll_rect, scroll_font, aa=True, bkg=None)
     elif current_level == 5:
         scroll_text = "This is the ultimate test. I'm sensing a significantly higher amount of enemies in this location... so give it your all! Those spells are all you're gonna get. I'll see you on the other side!"
         m.drawText(scroll_surf, scroll_text, (49, 52, 56), scroll_rect, scroll_font, aa=True, bkg=None)
 
-    if scroll_obj[2] and scroll_obj[0][1] >= 100:
+    if scroll_obj[1] and scroll_obj[0][1] >= 100:
         scroll_obj[0][1] -= 15
-    elif not scroll_obj[2] and scroll_obj[0][1] <= 650:
+    elif not scroll_obj[1] and scroll_obj[0][1] <= 650:
         scroll_obj[0][1] += 15
 
     screen.blit(scroll,scroll_obj[0])
@@ -948,7 +957,7 @@ while game_running:
                     found_tiles = False
                     char_mana = 255
                     level_retry = False
-                    scroll_obj = [[450 - scroll.get_width()//2,700],[], True]
+                    scroll_obj = [[450 - scroll.get_width()//2,700], True]
                     if current_level % 2 == 0:
                         active_block, active_tree, active_rock = pink_block, pink_tree, pink_rock
                         active_bg_col, active_bg_col2 = (166, 27, 38), (102, 18, 25)
@@ -979,7 +988,7 @@ while game_running:
                     found_tiles = False
                     level_retry = False
                     char_mana = 255
-                    scroll_obj = [[450 - scroll.get_width()//2,700],[], True]
+                    scroll_obj = [[450 - scroll.get_width()//2,700], True]
             else:
                 game_running = False
 

@@ -397,148 +397,140 @@ while game_running:
                     tv_object[3] = []  # required because of how list pointers work
                     active_tvs.append(tv_object)  # append to list 'active_tvs' the tv object
                 if tile == "e":  # checks for enemy tile
-                    if not first_etf:  # only execute once
-                        pfet = y
+                    if not first_etf:  # this conditional executes once per frame. once the first enemy tile is found bool var 'first_etf' becomes True
+                        pfet = y  # set the previous first tile to the current y value, because for the first enemy tile there is no 'previous enemy tile'
                         first_etf = True
                         found_e_tile = True
-                    if not found_e_tile:
-                        if y - 1 == pfet:
-                            enemy_tiles[-1].append(block_rect)
-                            pfet = y
-                            found_e_tile = True
-                        else:
-                            enemy_tiles.append([])
-                            enemy_tiles[-1].append(block_rect)
-                            pfet = y
-                            found_e_tile = True
-                    else:
-                        enemy_tiles[-1].append(block_rect)
-            elif tile == "4":
-                block_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0],(10 + x * bv + y * bv) - game_scroll[1], 101, 101)
+                    if not found_e_tile:  # for every row of tiles, bool var found_e_tile is False until an e tile is found
+                        if y - 1 == pfet:  # if this first enemy tile has a y value of 1 more than pfet, it must be a part of the same enemy territory
+                            enemy_tiles[-1].append(block_rect)  # append the Rect tile to the last list in enemy_tiles
+                            pfet = y  # update pfet to the current y value, so that the next row tests against this value
+                            found_e_tile = True  # set found_e_tile to True so this conditional can only execute once
+                        else:  # this will execute if the current y value has a difference more than 1 with pfet
+                            enemy_tiles.append([])  # create an empty list to represent a new enemy territory
+                            enemy_tiles[-1].append(block_rect)  # append to the last list, i.e the one we just created the Rect object
+                            pfet = y  # update pfet for next iteration
+                            found_e_tile = True  # set to True so this conditional can only execute once per row
+                    else:  # this will execute once an enemy tile has already been found in the row
+                        enemy_tiles[-1].append(block_rect)  # if an enemy tile exists in the row, the tile must belong with that enemy tile's territory
+            elif tile == "4":  # tile num. 4 represents a bridge facing diagonally to the left
+                block_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0],(10 + x * bv + y * bv) - game_scroll[1], 101, 101)  #
                 bridge_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0],(10 + x * bv + y * bv) - game_scroll[1], bridge.get_width(),bridge.get_height())
                 blocks.append([block_rect, bridge_rect])
                 trees.append(None)
                 rocks.append(None)
-            elif tile == "5":
+            elif tile == "5":  # tile num. 5 represents a bridge facing diagonally to the right (same bridge tile as before, but mirrored)
                 block_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0],(10 + x * bv + y * bv) - game_scroll[1], 101, 101)
                 bridge_rev_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0],(10 + x * bv + y * bv) - game_scroll[1], bridge_reverse.get_width(),bridge_reverse.get_height())
-                blocks.append([block_rect, bridge_rev_rect, 'r'])
+                blocks.append([block_rect, bridge_rev_rect, 'r'])  # additionally append string lateral 'r', which stands for reverse. this allows the program to diffrentiate from left/right facing bridges
                 trees.append(None)
                 rocks.append(None)
 
     # create the list of enemies
-    if len(active_enemies) == 0:
-        for _ in enemy_tiles:
-            active_enemies.append(slime_obj.copy())
+    if len(active_enemies) == 0:  # list 'active_enemies' will be empty during the very first frame of each level
+        for _ in enemy_tiles:  # enemy_tiles is a list of lists, containing all the enemy territories (which are made up of sequences of tiles)
+            active_enemies.append(slime_obj.copy())  # for each territory, append a copy of slime_obj as there will be one slime per territory
 
     # save number of tvs
-    if not found_tvs:
+    if not found_tvs:  # will only execute once per level
         number_of_tvs = len(active_tvs)
-        found_tvs = True
+        found_tvs = True  # once we have saved the original number of TVs, bool var found_tvs becomes False
 
-    # save original number of total enemies
-    if not found_enemies:
-        number_of_enemies = len(active_enemies) + len(active_tvs)
+    # hold the original number of enemies on the stage. e.g if ZONE 1 has 5 enemies, this will store 5 every frame
+    number_of_enemies = len(active_enemies) + len(active_tvs)  # take the sum of the list lengths of active_enemies and active_tvs, as they are the mobs the player fights
 
-    # create a list ONCE containing boolean values for each tile
+    # create a list ONCE containing boolean values for each tile // this is for creating a 'render distance' effect
     if not found_tiles:
-        tile_render_states = [False for block in blocks]
+        tile_render_states = [False for block in blocks]  # each block tile will get its own bool var starting at False. once it becomes True, the block is permanently rendered on the screen for that level
         found_tiles = True
 
-    for num, block_info in enumerate(blocks):
-        block_center = (block_info[1].x + block_info[1].w // 2, block_info[1].y + block_info[1].h // 2)
-        if m.check_rect_distance(char_center,block_center,500):
-            # pygame.draw.line(screen, (0, 255, 0), char_center,(block_info[1].x + block_info[1].w // 2, block_info[1].y + block_info[1].h // 2))
-            tile_render_states[num] = True
-        else:
-            pass
-            # pygame.draw.line(screen, (255, 0, 0), char_center,(block_info[1].x + block_info[1].w // 2, block_info[1].y + block_info[1].h // 2))
+    # checking if a certain tile should be rendered on screen
+    for num, block_info in enumerate(blocks):  # use enumerate to keep track of the block number, as tile_render_states is a related list
+        block_center = (block_info[1].x + block_info[1].w // 2, block_info[1].y + block_info[1].h // 2)  # represent the center of actual tile image. block_info[1] corresponds to 'green_block_rect', has same dimensions as the tile's image
 
-        if tile_render_states[num]:
-            if block_info[1].h == 170:
+        if m.check_rect_distance(char_center,block_center,500):  # func returns True if distance between character's current center and the block_center created just above is less than 500
+            tile_render_states[num] = True  # set the current block's render state to True
+
+        if tile_render_states[num]:  # if a tile's render state is True, blit its actual Surface onto the screen depending on its dimensions
+            if block_info[1].h == 170:  # the ground tile's Surface height is 170, so this will blit a ground tile at the specified location (block_info[0]) holds the blit location in the form of a Rect
                 screen.blit(active_block, block_info[0])
-            elif block_info[1].h == 169 and 'r' not in block_info:
+            elif block_info[1].h == 169 and 'r' not in block_info:  # the bridge tile has a height of 169. if 'r' is not found, it will blit a left facing bridge at the specified location
                 screen.blit(bridge, block_info[0])
-            else:
+            else:  # otherwise, the base tile must be a reverse bridge, so blit a reversed bridge at the specified location
                 screen.blit(bridge_reverse, block_info[0])
-            if trees[num] is not None:
+
+            if trees[num] is not None:  # if at the current index a tree list is found (looks like this [tree_rect,tree_hitbox]), blit a tree at that location
                 screen.blit(active_tree,trees[num][0])
-                # pygame.draw.rect(screen,(0,0,255),trees[num][1],5)
-            if rocks[num] is not None:
+            if rocks[num] is not None:  # if at the current index a rock list is found, blit a rock at the location
                 screen.blit(active_rock,rocks[num][0])
-                # pygame.draw.rect(screen,(0,0,255),rocks[num][1],5)
 
-    for j, area in enumerate(enemy_tiles):
-        for i, e_tile in enumerate(area):
-            if i == 0 and active_enemies[j][1][0] == 0 and active_enemies[j][1][1] == 0:
-                active_enemies[j][1] = [e_tile.x, e_tile.y]
-            # pygame.draw.rect(screen, (255, 0, 0), e_tile, 1)
-            active_enemies[j][3].append(e_tile)  # append each 'territory tile' to slime
+    for j, area in enumerate(enemy_tiles):  # iterate through each territory (area) in enemy_tiles
+        for i, e_tile in enumerate(area):  # iterate through each individual tile in the area
+            if i == 0 and active_enemies[j][1][0] == 0 and active_enemies[j][1][1] == 0:  # active_enemies[j][1] represents the slime at index j's location, in the form of [x,y]. this conditional will evaluate once for each slime object as they start off with location [0,0]
+                active_enemies[j][1] = [e_tile.x, e_tile.y]  # this represents the slime's spawning location within its territory. it is the first tile in the upper left corner of its area.
+            active_enemies[j][3].append(e_tile)  # append each 'territory tile' to slime's territory tiles list
 
-    # drawing the enemies-------------------------------------------------------------------#
-    for e_num, enemy in enumerate(active_enemies):
-        enemy_loc = enemy[1]
-        enemy_left = False
+    # handling all enemy actions, drawing the enemy, moving it, etc. -------------------------------------------------------------------#
+    for e_num, enemy in enumerate(active_enemies):  # iterate through each slime enemy in active_enemies, var enemy represents a list containing all necessary info
+        enemy_loc = enemy[1]  # store the current enemy's location, enemy_loc is in the form of [x,y]
+        enemy_left = False  # bool val to check whether or not a slime has left its territory
 
-        if enemy[6] == 'move':
-            enemy_cf = animations_dictionary[enemy[0]][enemy[2]]
-        else:
-            enemy_cf = animations_dictionary['slime_dmg'][enemy[2]]
+        if enemy[6] == 'move':  # index 6 represents the slime's animation. if it is 'move', set the enemy's current frame (animation) to its default
+            enemy_cf = animations_dictionary[enemy[0]][enemy[2]]  # enemy_cf stands for enemy current frame and holds a frame name (e.g slime0). enemy[0] is equal to 'slime' and enemy[2] holds the slime's frame number, so that new frames can be are played
+        else:  # slime has two possible animations, the other being when it is hurt
+            enemy_cf = animations_dictionary['slime_dmg'][enemy[2]]  # set the current frame to be a part of the 'slime_dmg' animation
 
-        enemy_surf = animation_frame_surfaces[enemy_cf]
-        enemy_surf.set_alpha(enemy[9])
-        enemy_hitbox = pygame.Rect(enemy_loc[0] - game_scroll[0],enemy_loc[1] - game_scroll[1],animation_frame_surfaces[enemy_cf].get_width(),animation_frame_surfaces[enemy_cf].get_height())
-        enemy[5] = enemy_hitbox
+        enemy_surf = animation_frame_surfaces[enemy_cf]  # given the name of the frame, grab its actual Surface to be blitted from dictionary
+        enemy_surf.set_alpha(enemy[9])  # enemy[9] represents the alpha each slime frame should have. this allows the slime to 'fade out' once it dies
+        enemy[5] = pygame.Rect(enemy_loc[0] - game_scroll[0],enemy_loc[1] - game_scroll[1],animation_frame_surfaces[enemy_cf].get_width(),animation_frame_surfaces[enemy_cf].get_height())  # create a Rect object representing the enemy's current hitbox, which is offsetted by the game's scroll
 
-        if char_loaded:
-            if not char_up:
-                if enemy_hitbox.colliderect(character_feet_hitbox) and enemy[9] >= 255:
-                    char_alive = False
-            else:
-                if enemy_hitbox.colliderect(character_feet_shadow) and enemy[9] >= 255:
+        if char_loaded:  # bool val that turns True once character's hitboxes are created, because as of now they do not exist
+            if not char_up:  # if the character is not moving upwards, its hitbox will be its feet
+                if enemy[5].colliderect(character_feet_hitbox) and enemy[9] >= 255:  # check for slime hitbox + char hitbox collision and also if whether or not the slime is on the screen (alpha >= 255)
+                    char_alive = False  # if collision occured, character is dead, set char_alive to False
+            else:  # otherwise, its hitbox will be its shadow
+                if enemy[5].colliderect(character_feet_shadow) and enemy[9] >= 255:
                     char_alive = False
 
-        if enemy[7]:
-            screen.blit(hp_bar,[enemy_loc[0] - game_scroll[0] + 15, enemy_loc[1] - game_scroll[1] - 20])
-            health_val = pygame.Rect(enemy_loc[0] - game_scroll[0] + 20, enemy_loc[1] - game_scroll[1] - 16, enemy[8] * 25, 8)
-            pygame.draw.rect(screen,(255,0,0),health_val,0)
+        if enemy[7]:  # bool val // if true, display slime's HP bar
+            screen.blit(hp_bar,[enemy_loc[0] - game_scroll[0] + 15, enemy_loc[1] - game_scroll[1] - 20])  # blit hp_bar on screen
+            health_val = pygame.Rect(enemy_loc[0] - game_scroll[0] + 20, enemy_loc[1] - game_scroll[1] - 16, enemy[8] * 25, 8)  # display the slime's current HP value
+            pygame.draw.rect(screen,(255,0,0),health_val,0)  # draw the health value Rect
 
-        if enemy[8] <= 0:
-            enemy[9] -= 40
+        if enemy[8] <= 0:  # enemy[8] represents the HP of the slime. if it is 0 or less, start making the enemy 'fade out' (decrease its alpha val)
+            enemy[9] -= 40  # decrease alpha
 
-        screen.blit(enemy_surf,[enemy_loc[0] - game_scroll[0], enemy_loc[1] - game_scroll[1]])
-        # pygame.draw.rect(screen,(0,255,0),enemy_hitbox,1)
-        enemy[2] += 1
+        screen.blit(enemy_surf,[enemy_loc[0] - game_scroll[0], enemy_loc[1] - game_scroll[1]])  # blit the enemy Surface
+        enemy[2] += 1  # increase each enemy's current frame number by 1 each iteration
 
         # handle enemy movement ----------------------------------------#
-        # moving enemy on screen
-        if enemy[4] == 'right':
+        # moving enemy on screen // enemy[4] represents the current direction the slime is heading in
+        if enemy[4] == 'right':  # due to isometric rendering, 'right' is diagonal to the bottom right
             enemy[1][0] += 0.5
             enemy[1][1] += 0.5
-        elif enemy[4] == 'left':
+        elif enemy[4] == 'left':  # isometric rendering, left is diagonal to the top left
             enemy[1][0] -= 0.5
             enemy[1][1] -= 0.5
-        elif enemy[4] == 'up':
+        elif enemy[4] == 'up':  # isometric rendering, up is diagonal to the top right
             enemy[1][0] += 0.5
             enemy[1][1] -= 0.5
-        elif enemy[4] == 'down':
+        elif enemy[4] == 'down':  # isometric rendering, down is diagonal to the bottom left
             enemy[1][0] -= 0.5
             enemy[1][1] += 0.5
 
         # check if enemy left territory
-        for territory_tile in enemy[3]:
-            # pygame.draw.rect(screen,(0,0,255),territory_tile,2)
-            if territory_tile.colliderect(enemy_hitbox):
+        for territory_tile in enemy[3]:  # this will iterate through each territory tile in its territory/area
+            if territory_tile.colliderect(enemy[5]):  # if at any point the slime is still inside its territory, i.e collides with one of its tiles, break
                 break
-        else:
-            enemy_left = True
+        else:  # if the for loop finishes executing, that means the slime has not collided with any territory tiles
+            enemy_left = True  # slime has left, set enemy_left to True
 
         # handle direction changing
-        if enemy_left:
-            direc = enemy[4]
-            if direc == 'right':
+        if enemy_left:  # first check if enemy has left its territory
+            direc = enemy[4]  # save the location the slime is currently travelling in
+            if direc == 'right':  # the enemy will change direction depending on the direction it was moving before it exited its territory
                 enemy[4] = 'down'
-                enemy[1][0] -= 25
+                enemy[1][0] -= 25  # once the slime has left its territory, it needs to be set back inside it
                 enemy[1][1] -= 25
             elif direc == 'left':
                 enemy[1][0] += 25
@@ -552,27 +544,26 @@ while game_running:
                 enemy[1][0] += 10
                 enemy[1][1] -= 10
                 enemy[4] = 'left'
-            enemy_left = False
+            enemy_left = False  # once the enemy has changed direction and is reset back into its territory, set this back to False
 
-        if enemy[2] >= len(animations_dictionary[enemy[0]]) and enemy[6] == 'move':  # if the current frame is equal to the enemy's max frame
+        if enemy[2] >= len(animations_dictionary[enemy[0]]) and enemy[6] == 'move':  # if the current frame is equal to the last index of its current animation list, reset frame count to 0
+            enemy[2] = 0  # reset frame count to 0
+        elif enemy[2] >= len(animations_dictionary['slime_dmg']) and enemy[6] == 'hurt':  # reset frame number if it is equal to the max index of animation 'hurt'
             enemy[2] = 0
-        elif enemy[2] >= len(animations_dictionary['slime_dmg']) and enemy[6] == 'hurt':
-            enemy[2] = 0
-            enemy[6] = 'move'
+            enemy[6] = 'move'  # additionally once the hurt animation is over, change animation back to 'move'
 
         enemy[3] = []  # clear the enemy's territory tiles
 
-        if enemy[9] <= 0:
+        if enemy[9] <= 0:  # once the enemy is completely invisible (alpha <= 0)
             number_of_enemies -= 1  # subtract one from enemy counter
             enemy[7] = False  # don't show hp bar
 
-    # tv code
+    # handling all tv actions -----------------------------------------------------------------------------------#
     for tv_num,tv in enumerate(active_tvs):
         frame = tv[0].copy()
         frame.set_alpha(tv[6])
         tv[2] = pygame.Rect(tv[1][0] - game_scroll[0], tv[1][1] - game_scroll[1], broken_tv.get_width(), broken_tv.get_height())
         screen.blit(frame,(tv[1][0] - game_scroll[0], tv[1][1] - game_scroll[1]))
-        # pygame.draw.rect(screen,(255,0,0),tv[2],1)
 
         if tv[2].colliderect(character_feet_hitbox) and tv[5]:
             char_alive = False

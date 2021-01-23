@@ -396,6 +396,7 @@ while game_running:
                     tv_object[1] = tv_rect  # give the object tv_rect, the location where it is to be blitted
                     tv_object[3] = []  # required because of how list pointers work
                     active_tvs.append(tv_object)  # append to list 'active_tvs' the tv object
+<<<<<<< Updated upstream
                 if tile == "e":  # checks for enemy tile
                     if not first_etf:  # this conditional executes once per frame. once the first enemy tile is found bool var 'first_etf' becomes True
                         pfet = y  # set the previous first tile to the current y value, because for the first enemy tile there is no 'previous enemy tile'
@@ -415,6 +416,27 @@ while game_running:
                         enemy_tiles[-1].append(block_rect)  # if an enemy tile exists in the row, the tile must belong with that enemy tile's territory
             elif tile == "4":  # tile num. 4 represents a bridge facing diagonally to the left
                 block_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0],(10 + x * bv + y * bv) - game_scroll[1], 101, 101)  #
+=======
+                if tile == "e":  # checks for enemy tile. this entire conditional is an algorithm which appends to the last list 'enemy_tiles' if an enemy tile is a part of an already existing territory. if not, it appends an empty list to 'enemy_tiles' to symbolize a different territory
+                    if not first_etf:  # only execute onces, for the first tile (the first tile has no previous enemy tile)
+                        pfet = y
+                        first_etf = True
+                        found_e_tile = True
+                    if not found_e_tile:
+                        if y - 1 == pfet:
+                            enemy_tiles[-1].append(block_rect)
+                            pfet = y
+                            found_e_tile = True
+                        else:
+                            enemy_tiles.append([])
+                            enemy_tiles[-1].append(block_rect)
+                            pfet = y
+                            found_e_tile = True
+                    else:
+                        enemy_tiles[-1].append(block_rect)
+            elif tile == "4":  # tile num. 4 represents a bridge.
+                block_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0],(10 + x * bv + y * bv) - game_scroll[1], 101, 101)
+>>>>>>> Stashed changes
                 bridge_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0],(10 + x * bv + y * bv) - game_scroll[1], bridge.get_width(),bridge.get_height())
                 blocks.append([block_rect, bridge_rect])
                 trees.append(None)
@@ -769,9 +791,11 @@ while game_running:
         spell_cast[4][1] += 1
         if spell_cast[4][1] >= len(animations_dictionary[spell_cast[4][0]]):
             spell_cast[4] = ['', 0, [0, 0]]
+
     # code for combat detection-----------------------------------------------------------------------#
+
         for enemy in active_enemies:
-            if enemy[5].colliderect(csf_hitbox) and spell_cast[4][1] == 1:  # makes sure detection occurs once per spell cast
+            if enemy[5].colliderect(csf_hitbox) and spell_cast[4][1] == 1 and char_alive:  # makes sure detection occurs once per spell cast
                 enemy[2] = 0
                 enemy[6] = 'hurt'
                 enemy[7] = True

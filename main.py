@@ -396,7 +396,6 @@ while game_running:
                     tv_object[1] = tv_rect  # give the object tv_rect, the location where it is to be blitted
                     tv_object[3] = []  # required because of how list pointers work
                     active_tvs.append(tv_object)  # append to list 'active_tvs' the tv object
-<<<<<<< Updated upstream
                 if tile == "e":  # checks for enemy tile
                     if not first_etf:  # this conditional executes once per frame. once the first enemy tile is found bool var 'first_etf' becomes True
                         pfet = y  # set the previous first tile to the current y value, because for the first enemy tile there is no 'previous enemy tile'
@@ -416,7 +415,6 @@ while game_running:
                         enemy_tiles[-1].append(block_rect)  # if an enemy tile exists in the row, the tile must belong with that enemy tile's territory
             elif tile == "4":  # tile num. 4 represents a bridge facing diagonally to the left
                 block_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0],(10 + x * bv + y * bv) - game_scroll[1], 101, 101)  #
-=======
                 if tile == "e":  # checks for enemy tile. this entire conditional is an algorithm which appends to the last list 'enemy_tiles' if an enemy tile is a part of an already existing territory. if not, it appends an empty list to 'enemy_tiles' to symbolize a different territory
                     if not first_etf:  # only execute onces, for the first tile (the first tile has no previous enemy tile)
                         pfet = y
@@ -436,7 +434,6 @@ while game_running:
                         enemy_tiles[-1].append(block_rect)
             elif tile == "4":  # tile num. 4 represents a bridge.
                 block_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0],(10 + x * bv + y * bv) - game_scroll[1], 101, 101)
->>>>>>> Stashed changes
                 bridge_rect = pygame.Rect((200 + x * bv - y * bv) - game_scroll[0],(10 + x * bv + y * bv) - game_scroll[1], bridge.get_width(),bridge.get_height())
                 blocks.append([block_rect, bridge_rect])
                 trees.append(None)
@@ -581,76 +578,71 @@ while game_running:
             enemy[7] = False  # don't show hp bar
 
     # handling all tv actions -----------------------------------------------------------------------------------#
-    for tv_num,tv in enumerate(active_tvs):
-        frame = tv[0].copy()
-        frame.set_alpha(tv[6])
-        tv[2] = pygame.Rect(tv[1][0] - game_scroll[0], tv[1][1] - game_scroll[1], broken_tv.get_width(), broken_tv.get_height())
-        screen.blit(frame,(tv[1][0] - game_scroll[0], tv[1][1] - game_scroll[1]))
+    for tv_num,tv in enumerate(active_tvs):  # iterate through each tv (each tv is a list containing all its info)
+        tv[0].set_alpha(tv[6])  # set the alpha of the tv's Surface being blitted to the alpha value stored in its list
+        tv[2] = pygame.Rect(tv[1][0] - game_scroll[0], tv[1][1] - game_scroll[1], broken_tv.get_width(), broken_tv.get_height())  # create and store the tv hitbox in the tv list
+        screen.blit(tv[0],(tv[1][0] - game_scroll[0], tv[1][1] - game_scroll[1]))  # displays the actual TV image/Surface
 
-        if tv[2].colliderect(character_feet_hitbox) and tv[5]:
-            char_alive = False
+        if tv[2].colliderect(character_feet_hitbox) and tv[5]:  # if the tv hitbox collides with the character's feet hitbox, and the tv is not destroyed
+            char_alive = False  # set character to dead
 
-        if frame_count == 59 and tv[5]:  # will execute every 1 second
-            tv[4] += tv[6]
-            tv[6] += 45
-            b_loc = [tv[2].x + tv[2].w//2 + game_scroll[0], tv[2].y + tv[2].h//2 + game_scroll[1]]
-            tv[3].extend(m.create_bullet(b_loc,tv[4]))
-            if len(tv[3]) >= 20:
+        if frame_count == 59 and tv[5]:  # for every 59th frame, if the tv is not destroyed, this will execute
+            tv[4] += tv[6]  # increase the tv's bullet angle by the current angle stored in tv[6]
+            tv[4] = 0 if tv[4] > 360 else tv[4]  # reset angle back to 0 if angle is greater than 360, keeps numbers small
+            b_loc = [tv[2].x + tv[2].w//2 + game_scroll[0], tv[2].y + tv[2].h//2 + game_scroll[1]]  # create the spawn point for the bullets
+            tv[3].extend(m.create_bullet(b_loc,tv[4]))  # create_bullet returns a list of 4 bullets, each with varying angles. extend the tv's bullet list with these 4
+            if len(tv[3]) >= 20:  # if the bullet list contains 20 or more bullets, delete the first 4 bullets in the list
                 del tv[3][:5]
 
-        if len(tv[3]) != 0:
-            for b in tv[3]:
-                b[0][0] += b[1][0]
-                b[0][1] -= b[1][1]
-                b_hitbox = pygame.Rect(b[0][0] - bullet.get_width()//2 - game_scroll[0], b[0][1] - bullet.get_height()//2 - game_scroll[1], bullet.get_width(), bullet.get_height())
-                screen.blit(bullet,(b[0][0] - bullet.get_width()//2 - game_scroll[0], b[0][1] - bullet.get_height()//2 - game_scroll[1]))
+        if len(tv[3]) != 0:  # only executes if there are bullets in the tv's bullet list
+            for b in tv[3]:  # for loop to iterate through each bullet
+                b[0][0] += b[1][0]  # b[0] contains the bullet's location ([x,y]), b[1] contains bullet's x/y velocity ([x,y]). this line adds x velocity to the x cord
+                b[0][1] -= b[1][1]  # subtract y velocity from bullet's y cord because of pygame's inverted y-axis
+                b_hitbox = pygame.Rect(b[0][0] - bullet.get_width()//2 - game_scroll[0], b[0][1] - bullet.get_height()//2 - game_scroll[1], bullet.get_width(), bullet.get_height())  # create the bullet's hitbox
+                screen.blit(bullet,(b[0][0] - bullet.get_width()//2 - game_scroll[0], b[0][1] - bullet.get_height()//2 - game_scroll[1]))  # draw the bullet onto the screen
 
-                if b_hitbox.colliderect(character_hitbox):
+                if b_hitbox.colliderect(character_hitbox):  # if the bullet hitbox collides with the character, they die
                     char_alive = False
 
         if not tv[5]:  # start decreasing its alpha if hit by spell
             tv[6] -= 40
 
-        if tv[6] <= 0:
+        if tv[6] <= 0:  # once the alpha is 0 or less, always set the alpha to 0 and subtract from num of enemies
             tv[6] = 0
             number_of_enemies -= 1
 
     # making glitch effect for spell casting ----------------------------------------------#
-    if spell_cast[0]:
+    if spell_cast[0]:   # if player clicked mouse one (the 3x3 grid is opening)
         glitch_bg, glitch_bg_sl, glitch_bg_fl, frame_bg = e.create_glitch_effect(gsl,frame=spell_bg.copy())
 
+        # display all glitch layers
         screen.blit(glitch_bg,(spell_cast[1][0] - glitch_bg.get_width() // 2, spell_cast[1][1] - glitch_bg.get_height() // 2))
         screen.blit(glitch_bg_sl, (spell_cast[1][0] - glitch_bg_sl.get_width() // 2, spell_cast[1][1] - glitch_bg_sl.get_height() // 2))
         screen.blit(glitch_bg_fl, (spell_cast[1][0] - glitch_bg_fl.get_width() // 2, spell_cast[1][1] - glitch_bg_fl.get_height() // 2))
         screen.blit(frame_bg,(spell_cast[1][0] - frame_bg.get_width() // 2, spell_cast[1][1] - frame_bg.get_height() // 2))
 
-        # screen.blit(glitch_bg,(spell_cast[1][0] - glitch_bg.get_width() // 2, spell_cast[1][1] - glitch_bg.get_height() // 2))
-        # screen.blit(glitch_bg_sl, (spell_cast[1][0] - glitch_bg_sl.get_width() // 2, spell_cast[1][1] - glitch_bg_sl.get_height() // 2))
-        # screen.blit(glitch_bg_fl, (spell_cast[1][0] - glitch_bg_fl.get_width() // 2, spell_cast[1][1] - glitch_bg_fl.get_height() // 2))
-        # screen.blit(frame_bg,(spell_cast[1][0] - frame_bg.get_width() // 2, spell_cast[1][1] - frame_bg.get_height() // 2))
-
-    mx, my = pygame.mouse.get_pos()
-    mb = pygame.mouse.get_pressed(3)
+    mx, my = pygame.mouse.get_pos()  # store current mouse position
+    mb = pygame.mouse.get_pressed(3)  # mousebutton // will contain a list indicating which mouse buttons from 1-3 have been pressed
 
     # character code -----------------------------------------------------#
     # detect collision
-    for rock in rocks:
-        if rock is not None:
-            rock_hb = rock[1]
-            if not char_jump:
-                collisions = m.check_collision(character_feet_hitbox,rock_hb)
-            else:
+    for rock in rocks:  # iterate through each rock in rock list
+        if rock is not None:  # if a rock exists, this will execute
+            rock_hb = rock[1]  # store rock hitbox
+            if not char_jump:  # if the character is not jumping, collision will occur with the character's feet hitbox
+                collisions = m.check_collision(character_feet_hitbox,rock_hb)  # returns a list holding four booleans, which represent the 4 side lengths of the hitbox. one boolean will equal True, indicating the specific side length the player collided with
+            else:  # if the character is jumping, collisions will occur with the character's shadow hitbox
                 collisions = m.check_collision(character_feet_shadow,rock_hb)
-            if collisions[0]:
+            if collisions[0]:  # if player collided with upper side of hitbox, repel char back upwards
                 char_y -= 5
-            elif collisions[1]:
+            elif collisions[1]:  # if player collided with bottom, repel char downwards
                 char_y += 5
-            elif collisions[2]:
+            elif collisions[2]:  # if player collided with left, repel char to the left
                 char_x -= 5
-            elif collisions[3]:
+            elif collisions[3]:  # if player collided with right, repel char to the right
                 char_x += 5
 
-    for tree in trees:
+    for tree in trees:  # same exact concept as with checking rock collisions
         if tree is not None:
             tree_hb = tree[1]
             if not char_jump:
@@ -666,147 +658,142 @@ while game_running:
             elif collisions[3]:
                 char_x += 5
 
-    if not char_jump:
+    if not char_jump:  # if the character is not jumping, its shadow hitbox will depend on its current 'char_y' val
         character_feet_shadow = pygame.Rect(char_x - game_scroll[0] + 10,char_y - game_scroll[1] + 80,70,20)
-    else:
+    else:  # if char jumping, shadow must stay on the ground, location based on 'char_prev_ypos' which holds the y val right before the char jumps
         character_feet_shadow = pygame.Rect(char_x - game_scroll[0] + 10,char_prev_ypos - game_scroll[1] + 80,70,20)
 
     # character movement
-    if char_alive:
-        if char_up:
+    if char_alive:  # character can only move if they are alive
+        if char_up:  # if character moving up, subtract from char_y
             char_y -= char_speed
-            char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'walk',char_animation_lock)
-            if char_jump:
+            char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'walk',char_animation_lock)  # set animation to 'walk' if character is moving
+            if char_jump:  # if char is jumping and is moving up, move the prev_ypos up as well (so shadow is not stationary mid-jump)
                 char_prev_ypos -= char_speed
-        if char_down:
+        if char_down:  # same idea, if char is moving down, add to char_y
             char_y += char_speed
-            char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'walk',char_animation_lock)
-            if char_jump:
+            char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'walk',char_animation_lock)  # same idea, change animation to 'walk'
+            if char_jump:  # if char is jumping but is moving down, add to prev_ypos so shadow moves down the screen
                 char_prev_ypos += char_speed
         if char_left:
             char_x -= char_speed
-            # for character sprite
             char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'walk',char_animation_lock)
             char_animation_flip = False
         if char_right:
             char_x += char_speed
-            # for character sprite
             char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'walk',char_animation_lock)
             char_animation_flip = True
         if char_jump:  # handle character jumping
-            char_y -= char_acceleration
-            char_acceleration -= 1
-            if char_y - game_scroll[1] + 90 > character_feet_shadow.y:  # plus 90 to detect bottom edge of character
-                char_jump = False
-                char_animation_lock = False
-                char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'idle',char_animation_lock)
+            char_y -= char_acceleration  # subtract from char_y to move char upwards, once char_accel becomes negative the char will move downwards
+            char_acceleration -= 1  # decrease char_accel to change the rate at which char_y is changing
+            if char_y - game_scroll[1] + 90 > character_feet_shadow.y:  # plus 90 to detect bottom edge of character // once char_y hits the top of the char's shadow location, jump is over
+                char_jump = False  # char has grounded, character is no longer jumping
+                char_animation_lock = False  # set animation lock to False so character can change animations
+                char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'idle',char_animation_lock)  # set animation to idle as character has landed, reset char frame number to 0
 
     # check if character fallen
-    block_touched = False
-    if not char_fall:
-        for num, block_hitbox in enumerate(blocks):
-            if character_feet_shadow.colliderect(block_hitbox[0]):
-                display_shadow = True
+    block_touched = False  # bool val which indicates whether or not the char is currently in contact with a block
+    if not char_fall:  # if the character is not falling off the map
+        for num, block_hitbox in enumerate(blocks):  # iterate through each block list, which holds each block hitbox
+            if character_feet_shadow.colliderect(block_hitbox[0]):  # block_hitbox[0] is where the hitbox is located. if the character's shadow is contacting it, this conditional becomes True
+                display_shadow = True  # display the shadow beneath the char
                 block_touched = True
-        else:
-            if not block_touched:
+        else:  # executes once for loop has exhausted
+            if not block_touched:  # if a block was not touched, do not display shadow beneath player
                 display_shadow = False
-            if not block_touched and not char_jump:
+            if not block_touched and not char_jump:  # if a block was not touched + the character is not currently jumping, they will fall off the map
                 char_fall = True
-                char_acceleration = 10
+                char_acceleration = 10  # set acceleration for when char is falling
 
-    if not block_touched and not char_jump:
+    if char_fall:  # if character is falling, increase char_y so character moves downwards, increase accel so they move down increasingly fast
         char_y += char_acceleration
         char_acceleration += 1
 
-    if char_acceleration >= 30:  # if player falls off the map, quit program (later implement life system)
+    if char_acceleration >= 30:  # once the player reaches a high enough accel (from falling off map) set alive state to False
         char_alive = False
 
     # spell casting code ------------------------------------------------------------------------#
-    if mb[0]:
-        spell_cast[0] = True
-        if spell_cast[1][0] == 0 and spell_cast[1][1] == 0:
-            spell_cast[1] = [mx, my]
-    else:
-        if len(spell_cast[3]) != 0:  # check if the user connected any grid points
-            for spell_name, spell_info in spells_dictionary.items():
-                spell_points, spell_cost = spell_info
-                if char_mana - spell_cost > 0:
-                    if spell_points == spell_cast[3]:
-                        spell_cast[4][0] = spell_name
-                        char_mana -= spell_cost
-            spell_cast[4][2] = spell_cast[1].copy()
+    if mb[0]:  # if mouse button one was pressed, this will execute
+        spell_cast[0] = True  # set spell active state to True
+        if spell_cast[1][0] == 0 and spell_cast[1][1] == 0:  # if no location exists in spell_cast, this will execute
+            spell_cast[1] = [mx, my]  # set spell 3x3 grid location to current mouse location (this will be the exact center of the grid)
+    else:  # if mouse button one is not being pressed, this will execute
+        if len(spell_cast[3]) != 0:  # check if the user connected any grid points while spell grid was active
+            for spell_name, spell_info in spells_dictionary.items():  # iterate through each key + value pair in spells_dict
+                spell_points, spell_cost = spell_info  # unpack spell_info list into the points connected (spell_points) and the spell cost (spell_cost)
+                if char_mana - spell_cost > 0:  # check if the character has enough mana to cast the spell
+                    if spell_points == spell_cast[3]:  # compare the points the user connected (spell_cast[3]) to spell_points in the dictionary. if there is a match, this will execute
+                        spell_cast[4][0] = spell_name  # add to spell_cast the name of the spell which is being casted
+                        char_mana -= spell_cost  # subtract the mana cost of the spell
+            spell_cast[4][2] = spell_cast[1].copy()  # give the current location the grid is being drawn at to the list containing the info on drawing the spell
 
-        spell_cast[0] = False
+        # everytime mb 1 is released, reset all spell-related variables
+        spell_cast[0], spell_cast[2], spell_cast[3] = False, [], []
         spell_cast[1][0], spell_cast[1][1] = (0, 0)
-        spell_cast[2] = []
-        spell_cast[3] = []
-        grid_point_diff = 1
-        grid_points = []
-        active_point = 4
+        grid_point_diff, grid_points, active_point, gsl = 1, [], 4, 0
         grid_max = False
-        gsl = 0
 
-    if spell_cast[0]:
-        for y in range(3):
+    if spell_cast[0]:  # if spell grid is active, this will execute
+        for y in range(3):  # nested loop to draw each grid_point on the screen (3 rows, 3 columns)
             for x in range(3):
-                grid_point_loc = [(spell_cast[1][0] - grid_point.get_width() // 2 - grid_point_diff * grid_scale) + x * grid_point_diff * grid_scale,(spell_cast[1][1] - grid_point.get_width() // 2 - grid_point_diff * grid_scale) + y * grid_point_diff * grid_scale]
-                if grid_max and len(grid_points) < 9:
-                    grid_points.append(pygame.Rect(grid_point_loc[0], grid_point_loc[1], grid_point.get_width(),grid_point.get_height()))
-                screen.blit(grid_point, grid_point_loc)
+                grid_point_loc = [(spell_cast[1][0] - grid_point.get_width() // 2 - grid_point_diff * grid_scale) + x * grid_point_diff * grid_scale,(spell_cast[1][1] - grid_point.get_width() // 2 - grid_point_diff * grid_scale) + y * grid_point_diff * grid_scale]  # create location of the grid point
+                if grid_max and len(grid_points) < 9:  # make sure grid_points can only contain 9 points at max
+                    grid_points.append(pygame.Rect(grid_point_loc[0], grid_point_loc[1], grid_point.get_width(),grid_point.get_height()))  # append Rect object representing where the grid point is to be blitted
+                screen.blit(grid_point, grid_point_loc)  # draw the actual grid point image at the created location
 
-        if len(grid_points) != 0:
-            pygame.draw.line(screen, (0, 0, 0), (grid_points[active_point][0] + grid_point.get_width() // 2,grid_points[active_point][1] + grid_point.get_height() // 2),(mx, my), 10)
-            for num, rect in enumerate(grid_points):
-                if rect.collidepoint(mx, my) and num != active_point:
-                    spell_cast[2].append([(grid_points[active_point][0] + grid_point.get_width() // 2,grid_points[active_point][1] + grid_point.get_height() // 2),(rect.x + rect.w // 2, rect.y + rect.h // 2)])
-                    spell_cast[3].append(num)
-                    active_point = num
+        if len(grid_points) != 0:  # True if there are grid points currently in the list
+            pygame.draw.line(screen, (0, 0, 0), (grid_points[active_point][0] + grid_point.get_width() // 2,grid_points[active_point][1] + grid_point.get_height() // 2),(mx, my), 10)  # draw line from current active point to mouse position
+            for num, rect in enumerate(grid_points):  # iterate through each grid point (which is actually a Rect obj) in the list, use enumerate to keep track of the grid point's associated number
+                if rect.collidepoint(mx, my) and num != active_point:  # check if the Rect obj collides with the current mouse position, as long as the Rect obj is not the one currently active
+                    spell_cast[2].append([(grid_points[active_point][0] + grid_point.get_width() // 2,grid_points[active_point][1] + grid_point.get_height() // 2),(rect.x + rect.w // 2, rect.y + rect.h // 2)])  # append the center of the grid point which is currently active, and the center of the grid point the mouse collided with
+                    spell_cast[3].append(num)  # append the grid point which was contacted to point history
+                    active_point = num  # active point now becomes the grid point which was just contacted
 
         if len(spell_cast[2]) != 0:  # drawing the existing line connections
-            for points in spell_cast[2]:
-                x1, y1 = points[0]
-                x2, y2 = points[1]
-                pygame.draw.line(screen, (0, 0, 0), (x1, y1), (x2, y2), 10)
+            for points in spell_cast[2]:  # iterate through each list of points in line history, to draw the lines
+                x1, y1 = points[0]  # represents location of the active grid point
+                x2, y2 = points[1]  # represents location of the point the active grid point connected with
+                pygame.draw.line(screen, (0, 0, 0), (x1, y1), (x2, y2), 10)  # draw a line between these two points
 
-        if grid_point_diff < 50:
+        if grid_point_diff < 50:  # this is used to scale the difference between grid points, once it is 50 or more, grid has reached its max size
             grid_point_diff += 5
-        else:
-            grid_max = True
+        else:  # stop increasing grid_point_diff
+            grid_max = True  # set grid_max to True to indicate grid has reached max size
 
-        if gsl < 170:
-            gsl += 15
+        if gsl < 170:  # grid side length // used to scale overall size of the grid
+            gsl += 15  # increment by 15 if under 170
 
     # spell animation handling
-    if spell_cast[4][0] != '':  # check if spell was cast
-        current_spell_frame = animations_dictionary[spell_cast[4][0]][spell_cast[4][1]]
-        csf_surf = animation_frame_surfaces[current_spell_frame]
-        if spell_cast[4][0] == 'slash':
-            csf_center = (spell_cast[4][2][0] - csf_surf.get_width()//2, spell_cast[4][2][1] - csf_surf.get_height()//2)
-            csf_hitbox = pygame.Rect(csf_center[0], csf_center[1], csf_surf.get_width(), csf_surf.get_height())
-        elif spell_cast[4][0] == 'thunder':
-            csf_center = (spell_cast[4][2][0] - csf_surf.get_width()//2, spell_cast[4][2][1] - csf_surf.get_height() + 50)
-            csf_hitbox = pygame.Rect(csf_center[0], csf_center[1] + 350, csf_surf.get_width(), csf_surf.get_height()-400)
-        screen.blit(csf_surf, csf_center)
-        spell_cast[4][1] += 1
-        if spell_cast[4][1] >= len(animations_dictionary[spell_cast[4][0]]):
+    if spell_cast[4][0] != '':  # check if a spell is currently stored, if one was cast
+        current_spell_frame = animations_dictionary[spell_cast[4][0]][spell_cast[4][1]]  # store the name of the frame to be displayed in the animation
+        csf_surf = animation_frame_surfaces[current_spell_frame]  # current spell frame surface // store the actual Surface/image to be displayed given the current frame name
+        if spell_cast[4][0] == 'slash':  # if user casted a 'slash' attack
+            csf_center = (spell_cast[4][2][0] - csf_surf.get_width()//2, spell_cast[4][2][1] - csf_surf.get_height()//2)  # create location for the current spell frame to be displayed at, will be the center of the grid
+            csf_hitbox = pygame.Rect(csf_center[0], csf_center[1], csf_surf.get_width(), csf_surf.get_height())  # create the hitbox of the frame being displayed
+        elif spell_cast[4][0] == 'thunder':  # if user casted a 'thunder' attack
+            csf_center = (spell_cast[4][2][0] - csf_surf.get_width()//2, spell_cast[4][2][1] - csf_surf.get_height() + 50)  # create center of frame
+            csf_hitbox = pygame.Rect(csf_center[0], csf_center[1] + 350, csf_surf.get_width(), csf_surf.get_height()-400)  # create hitbox
+        screen.blit(csf_surf, csf_center)  # draw the actual frame of the spell at the center of the grid
+        spell_cast[4][1] += 1  # increase spell's frame count by 1 so new frames in the animation are played
+        if spell_cast[4][1] >= len(animations_dictionary[spell_cast[4][0]]):  # once the animation is finished (frame count reached its max), reset the list holding all spell animation info
             spell_cast[4] = ['', 0, [0, 0]]
 
     # code for combat detection-----------------------------------------------------------------------#
 
-        for enemy in active_enemies:
-            if enemy[5].colliderect(csf_hitbox) and spell_cast[4][1] == 1 and char_alive:  # makes sure detection occurs once per spell cast
-                enemy[2] = 0
-                enemy[6] = 'hurt'
-                enemy[7] = True
-                if spell_cast[4][0] == 'slash':
+        for enemy in active_enemies:  # iterate through each enemy in enemy list
+            if enemy[5].colliderect(csf_hitbox) and spell_cast[4][1] == 1 and char_alive:  # check if enemy collided with spell hitbox, makes sure detection occurs once per spell cast and player is alive
+                enemy[2] = 0  # set enemy current frame to 0 as new animation will play
+                enemy[6] = 'hurt'  # set animation to 'hurt' as the enemy is being hit by a spell
+                enemy[7] = True  # display the enemy's HP bar
+                if spell_cast[4][0] == 'slash':  # if user casted a slash attack, subtract 1 HP
                     enemy[8] -= 1
-                elif spell_cast[4][0] == 'thunder':
+                elif spell_cast[4][0] == 'thunder':  # if user casted a slash attack, subtract 2 HP
                     enemy[8] -= 2
 
-        for tv in active_tvs:
-            if tv[2].colliderect(csf_hitbox) and spell_cast[4][1] == 1:
+        for tv in active_tvs:  # iterate through each tv in tv list
+            if tv[2].colliderect(csf_hitbox) and spell_cast[4][1] == 1:  # if the spell hitbox collides with the tv hitbox, this will execute
                 tv[5] = False  # if tv[5] is False, the tv's alpha will start decreasing
+
     # code for displaying number of enemies ----------------------------------------------------------#
     # create text for the number of enemies
     enemy_number_text = enemy_counter_font.render('x ' + str(number_of_enemies), True, (255, 255, 255))
@@ -815,44 +802,44 @@ while game_running:
     enemy_number_text_rect2 = enemy_number_text2.get_rect()
     enemy_number_text_rect.center = (830, 180)
     enemy_number_text_rect2.center = (833, 183)
+
     # character graphics code ------------------------------------------------------------------------#
-    # pygame.draw.rect(screen,(255,0,0),character_hitbox,1)
-    # pygame.draw.rect(screen,(0,255,0),character_feet_hitbox,1)
-    # pygame.draw.rect(screen, shadow_col, character_feet_shadow, 0)
 
-    if not char_alive:
-        if animations_dictionary['death'] == '':
-            if save_screen is None:
-                save_screen = screen.copy()
-            animations_dictionary['death'] = e.create_death_screen(10,pygame.transform.flip(char_frame_to_display,char_animation_flip,False))
-            char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'death',False)
-            char_animation_lock = True
+    if not char_alive:  # check if player is not alive
+        if animations_dictionary['death'] == '':  # only executes when no animation is loaded in under the key 'death'
+            if save_screen is None:  # store value in save_screen only once
+                save_screen = screen.copy()  # save_screen holds a copy of the screen once the player dies, used to create a glitchy bg
+            animations_dictionary['death'] = e.create_death_screen(10,pygame.transform.flip(char_frame_to_display,char_animation_flip,False))  # func returns a death animation list given the char's current frame
+            char_current_animation, char_current_frame = change_animation(char_current_animation,char_current_frame,'death',False)  # change animation to 'death' so this death animation plays out, change frame number to 0
+            char_animation_lock = True  # character can no longer change animation once they die
 
-    char_shadow = pygame.transform.scale(char_shadow,(character_feet_shadow.w,character_feet_shadow.h))
+    char_shadow = pygame.transform.scale(char_shadow,(character_feet_shadow.w,character_feet_shadow.h))  # actual image of shadow, scale it to the dimensions of character_feet_shadow Rect
 
-    if display_shadow:
+    if display_shadow:  # if True, the shadow will display
         screen.blit(char_shadow,character_feet_shadow)
 
-    char_current_frame += 1
+    char_current_frame += 1  # increase character's current frame by 1
+
     if char_current_frame >= len(animations_dictionary[char_current_animation]) and char_current_animation != 'jump':  # if the current frame is equal to the list length, reset it to 0
         char_current_frame = 0
-        if char_current_animation == 'death':
+        if char_current_animation == 'death':  # if the character is dying, create the glitch screen animation using save_screen which holds a copy of the screen before the char died
             animations_dictionary['screen_glitch'] = e.create_glitch_screen(save_screen,20)
-    if char_current_animation == 'jump' and char_current_frame >= len(animations_dictionary['jump']):
+
+    if char_current_animation == 'jump' and char_current_frame >= len(animations_dictionary['jump']):  # freeze char frame number at the last index of the jump animation
         char_current_frame = len(animations_dictionary['jump']) - 1
 
-    if char_current_animation != 'death':
-        char_frame_name = animations_dictionary[char_current_animation][char_current_frame]  # find frame name depending on char current frame
-        char_frame_to_display = animation_frame_surfaces[char_frame_name]
+    if char_current_animation != 'death':  # if animation is not death, display frame depending on char_frame_name
+        char_frame_name = animations_dictionary[char_current_animation][char_current_frame]  # find frame name depending on char current animation and current frame
+        char_frame_to_display = animation_frame_surfaces[char_frame_name]  # save the actual Surface to be displayed based on the frame name above
     else:
-        char_frame_to_display = animations_dictionary['death'][char_current_frame]
+        char_frame_to_display = animations_dictionary['death'][char_current_frame]  # if animation is death, the Surfaces themselves are already located within the dictionary
 
-    screen.blit(pygame.transform.flip(char_scythe,char_animation_flip, False), (char_x - game_scroll[0] - 15,char_y - game_scroll[1] - 50))
-    screen.blit(pygame.transform.flip(char_frame_to_display,char_animation_flip,False),(char_x - game_scroll[0],char_y - game_scroll[1]))  # flip to make the character face the right way
+    screen.blit(pygame.transform.flip(char_scythe,char_animation_flip, False), (char_x - game_scroll[0] - 15,char_y - game_scroll[1] - 50))  # display the scythe behind the player
+    screen.blit(pygame.transform.flip(char_frame_to_display,char_animation_flip,False),(char_x - game_scroll[0],char_y - game_scroll[1]))  # display the character // flip to make the character face the right way
     char_loaded = True
 
     # HUD ----------------------------------------------------------------------------#
-
+    # display pixelated border, mana bar, enemy counter, ZONE header
     screen.blit(game_border,(450 - game_border.get_width()//2,300 - game_border.get_height()//2))
     screen.blit(mana_bar, (8, 115))
     mana_bar_fill_bg, mana_bar_fill_sl, mana_bar_fill_fl = e.create_glitch_effect(int(char_mana*0.8), height=8)
@@ -865,7 +852,7 @@ while game_running:
     screen.blit(enemy_number_text,enemy_number_text_rect)
     screen.blit(enemy_counter,(659,120))
     screen.blit(level_header,(450 - level_header.get_width()//2,5))
-    if frame_count > 30:
+    if frame_count > 30:  # when frame count greater than/less than 30, the colour of the level header changes
         current_level_text = level_font.render('ZONE ' + str(current_level),True,(255,255,255))
         current_level_text2 = level_font.render('ZONE ' + str(current_level),True,(212, 212, 212))
     else:
@@ -880,21 +867,21 @@ while game_running:
 
     # scroll system --------------------------------------------------------------------------------------------#
     # add text to scroll depending on level
-    scroll_surf = pygame.Surface((900,600))
-    scroll_surf.set_colorkey((0,0,0))
-    scroll_rect = pygame.Rect(scroll_obj[0][0] + 160,scroll_obj[0][1] + 60, scroll_surf.get_width() - 600, scroll_surf.get_height())
+    scroll_surf = pygame.Surface((900,600))  # create Surface which matches the size of the screen, this is where the scroll text will be drawn onto
+    scroll_surf.set_colorkey((0,0,0))  # make the entire surface transparent (black transparent)
+    scroll_rect = pygame.Rect(scroll_obj[0][0] + 160,scroll_obj[0][1] + 60, scroll_surf.get_width() - 600, scroll_surf.get_height())  # create Rect obj which text wraps around
 
     if current_level == 1:
         scroll_text = "This is how I'll be communicating with you. If you want to view/close this scroll, press 'E'. To cast your basic slash attack, hold down the mouse button and drag the following pattern. Good luck! (note: follow the rainbow.)"
-        m.drawText(scroll_surf,scroll_text,(49, 52, 56),scroll_rect,scroll_font,aa=True,bkg=None)
-        scroll_surf.blit(slash_pic,[scroll_obj[0][0] + 230, scroll_obj[0][1] + 330])
+        m.drawText(scroll_surf,scroll_text,(49, 52, 56),scroll_rect,scroll_font,aa=True,bkg=None)  # draw scroll text
+        scroll_surf.blit(slash_pic,[scroll_obj[0][0] + 230, scroll_obj[0][1] + 330])  # display a picture of the slash pattern for the tutorial
     elif current_level == 2:
         scroll_text = "Good job on clearing those blobs. Seems as if they had mutated from some sort of chemical concoction left laying around. Keep moving onward!"
         m.drawText(scroll_surf,scroll_text,(49, 52, 56),scroll_rect,scroll_font,aa=True,bkg=None)
     elif current_level == 3:
         scroll_text = "You're moving into much more dangerous territory now. I'll show you another spell that will allow you to cast a much more powerful attack - a thunderbolt. Use it at your own discretion, however! It takes a lot of energy. "
         m.drawText(scroll_surf, scroll_text, (49, 52, 56), scroll_rect, scroll_font, aa=True, bkg=None)
-        scroll_surf.blit(thunder_pic,[scroll_obj[0][0] + 230, scroll_obj[0][1] + 330])
+        scroll_surf.blit(thunder_pic,[scroll_obj[0][0] + 230, scroll_obj[0][1] + 330])  # display a picture of the thunder pattern
     elif current_level == 4:
         scroll_text = "I've picked up some traces of another mutation... it appears to be what humans call 'televisions'. However, they're no ordinary televisions - they shoot bullets! Those bullets are indestructible, so don't even try destroying them. I'd recommend getting rid of those TVs first, because they are extremely annoying."
         m.drawText(scroll_surf, scroll_text, (49, 52, 56), scroll_rect, scroll_font, aa=True, bkg=None)
@@ -902,47 +889,48 @@ while game_running:
         scroll_text = "This is the ultimate test. I'm sensing a significantly higher amount of enemies in this location... so give it your all! Those spells are all you're gonna get. I'll see you on the other side!"
         m.drawText(scroll_surf, scroll_text, (49, 52, 56), scroll_rect, scroll_font, aa=True, bkg=None)
 
-    if scroll_obj[1] and scroll_obj[0][1] >= 100:
+    # move scroll on/off the screen
+    if scroll_obj[1] and scroll_obj[0][1] >= 100: # if scroll is active and its y position is greater than 100, move it upwards on screen
         scroll_obj[0][1] -= 15
-    elif not scroll_obj[1] and scroll_obj[0][1] <= 650:
+    elif not scroll_obj[1] and scroll_obj[0][1] <= 650:  # if scroll is not active and its y pos is less than 650, move it downwards
         scroll_obj[0][1] += 15
 
-    screen.blit(scroll,scroll_obj[0])
-    screen.blit(scroll_surf,(0,0))
+    screen.blit(scroll,scroll_obj[0])  # blit the scroll to location stored
+    screen.blit(scroll_surf,(0,0))  # blit scroll_surf which has all the drawn text on it
 
     # increase character mana
-    if char_mana <= 255 and frame_count % 5 == 0:
+    if char_mana <= 255 and frame_count % 5 == 0:  # increase only if mana is not maxed, and if frame count is divisble by 5 so mana doesn't replenish too fast
         char_mana += 1
 
-    if animations_dictionary['screen_glitch'] != '':
+    if animations_dictionary['screen_glitch'] != '':  # if no animation is currently stored under 'screen_glitch' key
         screen.blit(save_screen,(0,0))
-        screen.blit(animations_dictionary['screen_glitch'][char_current_frame % 3],(0,0))
-        screen.blit(backdrop,(0,0))
+        screen.blit(animations_dictionary['screen_glitch'][char_current_frame % 3],(0,0))  # blit the screen glitch frame. % 3 used to return a number from 0-2, as the screen_glitch ani. contains only 3 frames
+        screen.blit(backdrop,(0,0))  # display a backdrop which is fairly transparent to reduce the visibility of the glitch screen
         screen.blit(game_over_txt, game_over_rect)
         screen.blit(game_over_txt_2,game_over_rect_2)
 
-    # detect if level has been finished
+    # detect if level has been finished or level is being retried
     if number_of_enemies == 0 or level_retry:
-        level_transition.set_alpha(level_transition_alpha)
-        screen.blit(level_transition,(0,0))
+        level_transition.set_alpha(level_transition_alpha)  # set alpha of level_transition surface
+        screen.blit(level_transition,(0,0))  # level transition is a white Surface which is used for fade transition
 
-        if level_transition_alpha < 400 and not level_fade:
+        if level_transition_alpha < 400 and not level_fade:  # if the alpha is less than 400, increase level transition's alpha value making it more opaque
             level_transition_alpha += 10
         else:
-            level_fade = True
+            level_fade = True  # once alpha reaches above 400, level has faded out, set level_fade to True
             if level_timer <= 6:
-                level_transition_alpha -= 50
+                level_transition_alpha -= 50  # decrease alpha of level_transition once a little time has past, to make the game visible again
             level_timer += 1
 
-        if not level_retry:
+        if not level_retry:  # if the level is not being retried, i.e all enemies have been cleared
             if level_transition_alpha > 150:
-                active_bg_col,active_bg_col2 = (175, 216, 222), (220, 239, 242)
-                active_block,active_tree,active_rock = clean_block,clean_tree,clean_rock
+                active_bg_col,active_bg_col2 = (175, 216, 222), (220, 239, 242)  # set bg colours to 'clean' colours
+                active_block,active_tree,active_rock = clean_block,clean_tree,clean_rock  # set active assets to clean assets
 
-            if level_timer >= 300:  # wait approx 5 seconds before transitioning to new level
-                level_transition_alpha += 30
-                if level_transition_alpha >= 255:
-                    # reset variables
+            if level_timer >= 300:  # wait approx 5 seconds (300 frames per 5 seconds)  before transitioning to new level
+                level_transition_alpha += 30  # increase the alpha so that screen grows increasingly white
+                if level_transition_alpha >= 255:  # once the screen is completely opaque with white, this will execute
+                    # reset ALL level variables
                     current_level += 1
                     if current_level == 6:
                         game_running = False
@@ -974,7 +962,7 @@ while game_running:
                     else:
                         active_block, active_tree, active_rock = green_block, green_tree, green_rock
                         active_bg_col, active_bg_col2 = (45, 53, 61), (82, 96, 110)
-        else:
+        else:  # if level has been retried, not cleared
             if level_timer >= 1:
                 # reset variables
                 current_map = load_map(current_level)
@@ -999,6 +987,7 @@ while game_running:
                 char_mana = 255
                 scroll_obj = [[450 - scroll.get_width()//2,700], True]
 
+    # frame counter code
     frame_count += 1
     if frame_count > 60:
         frame_count = 0

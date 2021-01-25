@@ -307,7 +307,6 @@ while running:
 
 # main loop ----------------------------------------------------------------------------------------------------------------#
 while game_running:
-    print(number_of_enemies)
     # important game variables
     blocks = []  # holds the block tiles
     trees = []  # holds the tree tiles

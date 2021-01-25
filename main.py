@@ -172,7 +172,7 @@ char_animation_lock = False  # used in change_animation function. if True, the c
 
 # level variables
 game_running = True  # bool val which is used by the main game loop
-current_level = 5  # hold the current level
+current_level = 1  # hold the current level
 current_map = load_map(current_level)  # load in the map one
 game_scroll = [0,0]  # allows the game to stay centered on the player as they move. 0th index = x-offset, 1st index = y-offset
 number_of_enemies = 0  # hold the original number of enemies on the current level

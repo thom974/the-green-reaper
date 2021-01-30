@@ -979,6 +979,7 @@ while game_running:
     pygame.display.flip()
     clock.tick(FPS)
 
+# ending screen game loop
 while True:
     glitch_bgs = e.create_glitch_effect(900,height=600)
 

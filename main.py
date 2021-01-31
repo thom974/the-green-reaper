@@ -9,6 +9,16 @@ The player controls a 'grim reaper' character and casts spells using a 3x3 to ki
 of the story is that the character is killing off 'mutations' which originated from pollution, and in doing so, cleans
 the planet. There are 5 different zones to go through, with increasing difficulty. The game mimics an isometric style rendering,
 so each tile appears to look three dimensional.
+
+References:
+HUGE thanks to DaFluffyPotato for his extremely helpful pygame tutorials:
+His channel: https://www.youtube.com/channel/UCYNrBrBOgTfHswcz2DdZQFA
+The tutorials I used for this project:
+-https://www.youtube.com/watch?v=gE2gTCwLdFM: Isometric Rendering 
+-https://www.youtube.com/watch?v=5q7tmIlXROg: Game Scroll Effect
+-https://www.youtube.com/watch?v=4cYAkHfh9wM: Pixel Art
+-https://www.youtube.com/watch?v=l-GUfEJcTH4: Animations 
+
 '''
 
 # importing modules ---------------------------------------------#

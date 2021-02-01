@@ -116,6 +116,10 @@ venv.bak/
 # mkdocs documentation
 /site
 
+# main file (replaced with .exe)
+
+main.py
+
 # mypy
 .mypy_cache/
 .dmypy.json

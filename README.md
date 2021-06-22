@@ -1,6 +1,13 @@
 # thomas' game
  repo for python game made with the 'pygame' module. 
  
+ # features 
+ 
+ - all art elements created from scratch 
+ - spell-casting system (two different spells to cast, different mana costs)
+ - 5 different levels (loaded in through text file, fully customizable) 
+ - interesting main story :) 
+ 
  # screenshots 
  
 ![image](https://user-images.githubusercontent.com/74675902/122982852-5bcb2980-d369-11eb-9a33-2bf48f1e6036.png)
